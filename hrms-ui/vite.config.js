@@ -3,5 +3,12 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+
+  // 🔴 THIS IS REQUIRED FOR GITHUB PAGES
   base: "/prakuratms/",
+
+  build: {
+    outDir: "dist",
+    assetsDir: "assets",
+  },
 });
