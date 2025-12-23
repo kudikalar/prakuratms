@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
 
-  // 🔴 REQUIRED FOR GITHUB PAGES
+  // ✅ MUST MATCH REPO NAME
   base: "/prakuratms/",
 
   build: {
