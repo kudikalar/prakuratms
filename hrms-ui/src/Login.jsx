@@ -1,11 +1,44 @@
 import { useState } from "react";
 import GlassCard from "../components/GlassCard";
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // ✅ NEW: error states
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    let newErrors = { email: "", password: "" };
+    let hasError = false;
+
+    // ✅ Email validation
+    if (!email) {
+      newErrors.email = "Email is required";
+      hasError = true;
+    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+      newErrors.email = "Enter a valid email address";
+      hasError = true;
+    }
+
+    // ✅ Password validation
+    if (!password) {
+      newErrors.password = "Password is required";
+      hasError = true;
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+      hasError = true;
+    }
+
+    setErrors(newErrors);
+
+    if (hasError) return;
+
     alert("Login API will be connected later");
   };
 
@@ -25,36 +58,62 @@ export default function Login() {
             </h2>
           </div>
         </div>
+
         <div className="p-10 text-white flex flex-col justify-center">
           <h1 className="text-3xl font-bold mb-2">Sign in</h1>
           <p className="text-gray-400 mb-8">
             Enter your credentials to continue
           </p>
+
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* EMAIL */}
             <div>
               <label className="block text-sm mb-1 text-gray-300">
                 Email
               </label>
               <input
                 type="email"
-                className="w-full px-4 py-3 bg-slate-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className={`w-full px-4 py-3 bg-slate-900 border rounded-lg focus:outline-none focus:ring-2 ${
+                  errors.email
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-700 focus:ring-blue-600"
+                }`}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setErrors({ ...errors, email: "" });
+                }}
               />
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-500">{errors.email}</p>
+              )}
             </div>
+
+            {/* PASSWORD */}
             <div>
               <label className="block text-sm mb-1 text-gray-300">
                 Password
               </label>
               <input
                 type="password"
-                className="w-full px-4 py-3 bg-slate-900 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className={`w-full px-4 py-3 bg-slate-900 border rounded-lg focus:outline-none focus:ring-2 ${
+                  errors.password
+                    ? "border-red-500 focus:ring-red-500"
+                    : "border-gray-700 focus:ring-blue-600"
+                }`}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setErrors({ ...errors, password: "" });
+                }}
               />
+              {errors.password && (
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.password}
+                </p>
+              )}
             </div>
+
             <button
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-semibold transition"
@@ -62,6 +121,7 @@ export default function Login() {
               Sign In
             </button>
           </form>
+
           <p className="text-xs text-gray-500 mt-8">
             © {new Date().getFullYear()} Prakura IT Solutions
           </p>
