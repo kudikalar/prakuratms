@@ -1,4 +1,4 @@
-name: Deploy Prakura TMS to GitHub Pages
+name: Deploy Prakura TMS (Frontend)
 
 on:
   push:
@@ -10,16 +10,12 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Setup Node
@@ -31,23 +27,21 @@ jobs:
         working-directory: hrms-ui
         run: npm install
 
-      - name: Build project
+      - name: Build frontend
         working-directory: hrms-ui
         run: npm run build
 
-      - name: Upload Pages Artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: hrms-ui/dist
 
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     needs: build
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
 
     steps:
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
