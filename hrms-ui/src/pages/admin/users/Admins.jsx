@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import Toast from "../../../components/Toast";
 
 /* ================= HELPERS ================= */
@@ -10,10 +10,16 @@ const emptyAdmin = {
   email: "",
 };
 
+const isValidEmail = (email) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
 export default function Admins() {
   const [admins, setAdmins] = useState([]);
   const [form, setForm] = useState(emptyAdmin);
   const [editing, setEditing] = useState(false);
+
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const [toast, setToast] = useState("");
   const [confirmId, setConfirmId] = useState(null);
 
@@ -24,13 +30,51 @@ export default function Admins() {
       educators: [],
       students: [],
     };
-
     setAdmins(users.admins);
   }, []);
 
+  /* ================= VALIDATION ================= */
+  const validate = (data = form) => {
+    const e = {};
+
+    if (!data.name.trim()) {
+      e.name = "Admin name is required";
+    } else if (data.name.length < 3) {
+      e.name = "Name must be at least 3 characters";
+    }
+
+    if (!data.email.trim()) {
+      e.email = "Email address is required";
+    } else if (!isValidEmail(data.email)) {
+      e.email = "Enter a valid email address";
+    } else {
+      const exists = admins.some(
+        (a) =>
+          a.email.toLowerCase() === data.email.toLowerCase() &&
+          a.id !== data.id
+      );
+      if (exists) e.email = "Email already exists";
+    }
+
+    return e;
+  };
+
+  useEffect(() => {
+    setErrors(validate());
+  }, [form]);
+
+  const isFormValid = Object.keys(errors).length === 0;
+
   /* ================= SAVE ================= */
   const saveAdmin = () => {
-    if (!form.name || !form.email) return;
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    setTouched({ name: true, email: true });
+
+    if (Object.keys(validationErrors).length > 0) {
+      setToast("❌ Please fix validation errors");
+      return;
+    }
 
     const users = JSON.parse(localStorage.getItem("users")) || {
       admins: [],
@@ -46,10 +90,7 @@ export default function Admins() {
       );
       setToast("✅ Admin updated successfully");
     } else {
-      updated = [
-        ...users.admins,
-        { ...form, id: Date.now() },
-      ];
+      updated = [...users.admins, { ...form, id: Date.now() }];
       setToast("✅ Admin added successfully");
     }
 
@@ -57,8 +98,7 @@ export default function Admins() {
     localStorage.setItem("users", JSON.stringify(users));
 
     setAdmins(updated);
-    setForm(emptyAdmin);
-    setEditing(false);
+    resetForm();
 
     setTimeout(() => setToast(""), 2500);
   };
@@ -66,10 +106,7 @@ export default function Admins() {
   /* ================= DELETE ================= */
   const deleteAdmin = () => {
     const users = JSON.parse(localStorage.getItem("users"));
-
-    const updated = users.admins.filter(
-      (a) => a.id !== confirmId
-    );
+    const updated = users.admins.filter((a) => a.id !== confirmId);
 
     users.admins = updated;
     localStorage.setItem("users", JSON.stringify(users));
@@ -85,8 +122,18 @@ export default function Admins() {
   const startEdit = (admin) => {
     setForm(admin);
     setEditing(true);
+    setErrors({});
+    setTouched({});
   };
 
+  const resetForm = () => {
+    setForm(emptyAdmin);
+    setEditing(false);
+    setErrors({});
+    setTouched({});
+  };
+
+  /* ================= UI ================= */
   return (
     <div className="max-w-5xl space-y-8 text-gray-800">
 
@@ -101,37 +148,73 @@ export default function Admins() {
       {/* ================= FORM ================= */}
       <GlassCard>
         <div className="grid md:grid-cols-2 gap-4">
-          <input
-            placeholder="Admin Name"
-            value={form.name}
-            onChange={(e) =>
-              setForm({ ...form, name: e.target.value })
-            }
-            className="p-3 rounded-xl bg-white/70 border"
-          />
+          {/* NAME */}
+          <div>
+            <input
+              placeholder="Admin Name"
+              value={form.name}
+              onChange={(e) =>
+                setForm({ ...form, name: e.target.value })
+              }
+              onBlur={() => setTouched({ ...touched, name: true })}
+              className={`p-3 w-full rounded-xl bg-white/70 border
+                ${errors.name && touched.name
+                  ? "border-red-400"
+                  : "border-gray-200"}`}
+            />
+            {errors.name && touched.name && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.name}
+              </p>
+            )}
+          </div>
 
-          <input
-            placeholder="Email Address"
-            value={form.email}
-            onChange={(e) =>
-              setForm({ ...form, email: e.target.value })
-            }
-            className="p-3 rounded-xl bg-white/70 border"
-          />
+          {/* EMAIL */}
+          <div>
+            <input
+              placeholder="Email Address"
+              value={form.email}
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value })
+              }
+              onBlur={() => setTouched({ ...touched, email: true })}
+              className={`p-3 w-full rounded-xl bg-white/70 border
+                ${errors.email && touched.email
+                  ? "border-red-400"
+                  : "border-gray-200"}`}
+            />
+            {errors.email && touched.email && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.email}
+              </p>
+            )}
+          </div>
         </div>
 
-        <button
-          onClick={saveAdmin}
-          className="
-            mt-4 flex items-center gap-2
-            px-6 py-2.5 rounded-full
-            bg-purple-600 hover:bg-purple-700
-            text-white font-semibold shadow
-          "
-        >
-          <FaPlus />
-          {editing ? "Update Admin" : "Add Admin"}
-        </button>
+        <div className="flex gap-3 mt-5">
+          <button
+  onClick={saveAdmin}
+  className="
+    flex items-center gap-2 px-6 py-2.5 rounded-full
+    font-semibold shadow
+    bg-purple-600 hover:bg-purple-700 text-white
+  "
+>
+  <FaPlus />
+  {editing ? "Update Admin" : "Add Admin"}
+</button>
+
+
+          {editing && (
+            <button
+              onClick={resetForm}
+              className="px-5 py-2.5 rounded-full bg-gray-100 text-gray-700 flex items-center gap-2"
+            >
+              <FaTimes />
+              Cancel
+            </button>
+          )}
+        </div>
       </GlassCard>
 
       {/* ================= LIST ================= */}

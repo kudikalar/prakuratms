@@ -13,6 +13,9 @@ const emptyStudent = {
   batchId: "",
 };
 
+const isValidEmail = (email) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
 /* ================= STATUS ================= */
 const getBatchStatus = (startDate, endDate) => {
   if (!startDate || !endDate) return "N/A";
@@ -34,11 +37,14 @@ export default function Students() {
   const [confirmId, setConfirmId] = useState(null);
   const [toast, setToast] = useState("");
 
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState({ key: "name", dir: "asc" });
 
-  /* LOAD */
+  /* ================= LOAD ================= */
   useEffect(() => {
     const users = JSON.parse(localStorage.getItem("users")) || { students: [] };
     setStudents(users.students || []);
@@ -47,10 +53,46 @@ export default function Students() {
 
   const getBatchById = (id) => batches.find((b) => b.id === Number(id));
 
-  /* FILTER + SORT */
+  /* ================= VALIDATION ================= */
+  const validate = (data = form) => {
+    const e = {};
+
+    if (!data.name.trim()) {
+      e.name = "Student name is required";
+    } else if (data.name.length < 3) {
+      e.name = "Name must be at least 3 characters";
+    }
+
+    if (!data.email.trim()) {
+      e.email = "Email is required";
+    } else if (!isValidEmail(data.email)) {
+      e.email = "Invalid email format";
+    } else {
+      const exists = students.some(
+        (s) =>
+          s.email.toLowerCase() === data.email.toLowerCase() &&
+          s.id !== data.id
+      );
+      if (exists) e.email = "Email already exists";
+    }
+
+    if (!data.batchId) {
+      e.batchId = "Batch is required";
+    }
+
+    return e;
+  };
+
+  useEffect(() => {
+    setErrors(validate());
+  }, [form]);
+
+  /* ================= FILTER + SORT ================= */
   const processedStudents = useMemo(() => {
     return students
-      .filter((s) => s.name.toLowerCase().includes(search.toLowerCase()))
+      .filter((s) =>
+        s.name.toLowerCase().includes(search.toLowerCase())
+      )
       .sort((a, b) => {
         const aVal =
           sort.key === "batch"
@@ -78,7 +120,7 @@ export default function Students() {
       });
   }, [students, search, sort, batches]);
 
-  /* PAGINATION */
+  /* ================= PAGINATION ================= */
   const totalPages = Math.ceil(processedStudents.length / PAGE_SIZE);
   const paginated = processedStudents.slice(
     (page - 1) * PAGE_SIZE,
@@ -87,10 +129,14 @@ export default function Students() {
 
   useEffect(() => setPage(1), [search]);
 
-  /* SAVE */
+  /* ================= SAVE ================= */
   const saveStudent = () => {
-    if (!form.name || !form.email || !form.batchId) {
-      setToast("⚠️ Fill all fields");
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    setTouched({ name: true, email: true, batchId: true });
+
+    if (Object.keys(validationErrors).length > 0) {
+      setToast("❌ Please fix validation errors");
       return;
     }
 
@@ -110,10 +156,10 @@ export default function Students() {
     users.students = updated;
     localStorage.setItem("users", JSON.stringify(users));
     setStudents(updated);
-    setForm(emptyStudent);
-    setEditing(false);
+    resetForm();
   };
 
+  /* ================= DELETE ================= */
   const deleteStudent = () => {
     const users = JSON.parse(localStorage.getItem("users"));
     const updated = users.students.filter((s) => s.id !== confirmId);
@@ -122,6 +168,13 @@ export default function Students() {
     setStudents(updated);
     setConfirmId(null);
     setToast("🗑️ Student deleted");
+  };
+
+  const resetForm = () => {
+    setForm(emptyStudent);
+    setEditing(false);
+    setErrors({});
+    setTouched({});
   };
 
   const toggleSort = (key) => {
@@ -137,7 +190,7 @@ export default function Students() {
       {/* HEADER */}
       <h2 className="text-2xl font-bold">Students</h2>
 
-      {/* SEARCH (SMALLER) */}
+      {/* SEARCH */}
       <GlassCard compact>
         <input
           placeholder="Search student by name..."
@@ -147,73 +200,100 @@ export default function Students() {
         />
       </GlassCard>
 
-      {/* ADD STUDENT (COMPACT + SMALL BUTTON) */}
+      {/* ADD / EDIT FORM */}
       <GlassCard compact>
-        <div className="grid md:grid-cols-4 gap-3 items-center">
-          <Input
-            placeholder="Name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <Input
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-          <select
-  value={form.batchId}
-  onChange={(e) => setForm({ ...form, batchId: e.target.value })}
-  className="
-    w-full
-    px-3 py-2
-    text-sm
-    rounded-xl
-    bg-white/60 backdrop-blur-md
-    border border-white/50
-    shadow-inner
-    text-gray-700
-    focus:outline-none
-    focus:ring-2 focus:ring-purple-400/60
-    focus:border-purple-400
-    transition-all duration-200
-    hover:bg-white/70
-    appearance-none
-    cursor-pointer
-  "
->
-  <option value="" className="text-gray-400">
-    Select Batch
-  </option>
-  {batches.map((b) => (
-    <option key={b.id} value={b.id}>
-      {b.name}
-    </option>
-  ))}
-</select>
+        <div className="grid md:grid-cols-4 gap-3 items-start">
 
+          {/* NAME */}
+          <div>
+            <Input
+              placeholder="Name"
+              value={form.name}
+              onChange={(e) =>
+                setForm({ ...form, name: e.target.value })
+              }
+              onBlur={() =>
+                setTouched({ ...touched, name: true })
+              }
+              className={errors.name && touched.name ? "border-red-400" : ""}
+            />
+            {errors.name && touched.name && (
+              <p className="text-xs text-red-600 mt-1">{errors.name}</p>
+            )}
+          </div>
 
-          <button
-            onClick={saveStudent}
-            className="
-              flex items-center justify-center gap-1
-              px-3 py-1.5
-              text-xs font-semibold
-              rounded-full
-              bg-purple-600 hover:bg-purple-700
-              text-white
-              shadow-md transition
-            "
-          >
-            <FaPlus className="text-[10px]" />
-            {editing ? "Update" : "Add"}
-          </button>
+          {/* EMAIL */}
+          <div>
+            <Input
+              placeholder="Email"
+              value={form.email}
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value })
+              }
+              onBlur={() =>
+                setTouched({ ...touched, email: true })
+              }
+              className={errors.email && touched.email ? "border-red-400" : ""}
+            />
+            {errors.email && touched.email && (
+              <p className="text-xs text-red-600 mt-1">{errors.email}</p>
+            )}
+          </div>
+
+          {/* BATCH */}
+          <div>
+            <select
+              value={form.batchId}
+              onChange={(e) =>
+                setForm({ ...form, batchId: e.target.value })
+              }
+              onBlur={() =>
+                setTouched({ ...touched, batchId: true })
+              }
+              className={`w-full px-3 py-2 text-sm rounded-xl bg-white/60 border ${
+                errors.batchId && touched.batchId
+                  ? "border-red-400"
+                  : "border-white/50"
+              }`}
+            >
+              <option value="">Select Batch</option>
+              {batches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+            {errors.batchId && touched.batchId && (
+              <p className="text-xs text-red-600 mt-1">{errors.batchId}</p>
+            )}
+          </div>
+
+          {/* BUTTONS */}
+          <div className="flex gap-2">
+            <button
+              onClick={saveStudent}
+              className="flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-md"
+            >
+              <FaPlus className="text-[10px]" />
+              {editing ? "Update" : "Add"}
+            </button>
+
+            {editing && (
+              <button
+                onClick={resetForm}
+                className="px-3 py-1.5 text-xs rounded-full bg-gray-200 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
       </GlassCard>
 
       {/* TABLE */}
       <GlassCard>
         <table className="w-full text-sm">
-          <thead className="bg-white/50 backdrop-blur border-b text-gray-600">
+          <thead className="bg-white/50 border-b text-gray-600">
             <tr>
               {["name", "email", "batch", "status"].map((col) => (
                 <th
@@ -241,7 +321,7 @@ export default function Students() {
               return (
                 <tr
                   key={s.id}
-                  className="border-b last:border-0 hover:bg-white/30 transition"
+                  className="border-b hover:bg-white/30"
                 >
                   <td
                     className="py-2 px-2 font-medium text-purple-700 cursor-pointer"
@@ -278,7 +358,7 @@ export default function Students() {
             <button
               key={i}
               onClick={() => setPage(i + 1)}
-              className={`px-3 py-1 text-xs rounded-full transition ${
+              className={`px-3 py-1 text-xs rounded-full ${
                 page === i + 1
                   ? "bg-purple-600 text-white"
                   : "bg-white/60 hover:bg-white/80"
@@ -307,35 +387,18 @@ export default function Students() {
 const Input = ({ className = "", ...props }) => (
   <input
     {...props}
-    className={`
-      w-full
-      px-3 py-2
-      text-sm
-      rounded-xl
-      bg-white/60 backdrop-blur-md
-      border border-white/50
-      shadow-inner
-      placeholder:text-gray-400
-      focus:outline-none
-      focus:ring-2 focus:ring-purple-400/60
-      focus:border-purple-400
-      transition-all duration-200
-      hover:bg-white/70
-      ${className}
-    `}
+    className={`w-full px-3 py-2 text-sm rounded-xl bg-white/60 border border-white/50 focus:ring-2 focus:ring-purple-400/60 transition ${className}`}
   />
 );
-
 
 const IconBtn = ({ children, danger, ...props }) => (
   <button
     {...props}
-    className={`
-      p-1.5 rounded-full transition
-      ${danger
+    className={`p-1.5 rounded-full ${
+      danger
         ? "bg-red-100 text-red-600 hover:bg-red-200"
-        : "bg-blue-100 text-blue-600 hover:bg-blue-200"}
-    `}
+        : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+    }`}
   >
     {children}
   </button>
@@ -370,16 +433,8 @@ const ConfirmModal = ({ onCancel, onConfirm }) => (
   </div>
 );
 
-/* ================= GLASS ================= */
-
 const GlassCard = ({ children, compact }) => (
-  <div
-    className={`bg-white/40 backdrop-blur-[24px] border border-white/40 rounded-2xl shadow ${
-      compact ? "p-3" : "p-5"
-    }`}
-  >
+  <div className={`bg-white/40 backdrop-blur-[24px] border border-white/40 rounded-2xl shadow ${compact ? "p-3" : "p-5"}`}>
     {children}
   </div>
 );
-
-/* ================= INPUT STYLE ================= */
