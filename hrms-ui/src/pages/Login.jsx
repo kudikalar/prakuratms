@@ -138,9 +138,11 @@ export default function Login() {
         <div className="flex flex-col items-center gap-4 px-10 py-4 rounded-3xl bg-white shadow-md">
           <div className="flex items-center gap-3">
             <img src={logo} className="w-10 h-10" />
-            <span className="text-xl font-semibold text-slate-700">
-              Prakura IT Solutions
-            </span>
+           <span className="text-xl font-semibold text-slate-700 tracking-wide">
+  <span className="font-bold text-purple-600">TMS</span>{" "}
+  <span className="text-slate-700">Prakura IT Solutions</span>
+</span>
+
           </div>
 
           <nav className="flex flex-wrap justify-center gap-4 text-sm">
@@ -213,13 +215,35 @@ export default function Login() {
                 ring={theme.ring}
                 type={showPassword ? "text" : "password"}
                 right={
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
                     {showPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 }
               />
 
-              {/* TERMS & PRIVACY (UPDATED, NOTHING REMOVED) */}
+              {/* REMEMBER + FORGOT (PRESENT & WORKING) */}
+              <div className="flex justify-between text-xs text-slate-500">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  />
+                  Remember me
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setForgotOpen(true)}
+                  className="hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              {/* TERMS & PRIVACY */}
               <label className="flex gap-2 text-xs text-slate-500">
                 <input
                   type="checkbox"
@@ -228,11 +252,19 @@ export default function Login() {
                 />
                 <span>
                   I agree to the{" "}
-                  <button type="button" onClick={() => setTermsOpen(true)} className="underline text-purple-600">
+                  <button
+                    type="button"
+                    onClick={() => setTermsOpen(true)}
+                    className="underline text-purple-600"
+                  >
                     Terms of Service
                   </button>{" "}
                   and{" "}
-                  <button type="button" onClick={() => setPrivacyOpen(true)} className="underline text-purple-600">
+                  <button
+                    type="button"
+                    onClick={() => setPrivacyOpen(true)}
+                    className="underline text-purple-600"
+                  >
                     Privacy Policy
                   </button>
                 </span>
@@ -309,27 +341,51 @@ function GlassInput({ icon, value, onChange, placeholder, ring, type = "text", r
         placeholder={placeholder}
         className={`w-full pl-14 pr-10 py-3 rounded-full border border-slate-200 text-slate-700 placeholder-slate-400 focus:ring-2 ${ring}`}
       />
-      {right && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">{right}</span>}
+      {right && (
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+          {right}
+        </span>
+      )}
     </div>
   );
 }
 
 function Social({ icon, url }) {
+  const brandClass =
+    url.includes("linkedin")
+      ? "bg-[#0A66C2] text-white"
+      : url.includes("instagram")
+      ? "bg-gradient-to-br from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white"
+      : url.includes("facebook")
+      ? "bg-[#1877F2] text-white"
+      : url.includes("youtube")
+      ? "bg-[#FF0000] text-white"
+      : url.includes("wa.me")
+      ? "bg-[#25D366] text-white"
+      : "bg-slate-200 text-slate-700";
+
   return (
     <a
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center hover:scale-125 transition"
+      className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-md
+      ${brandClass}
+      hover:scale-125 hover:shadow-xl transition-transform duration-300`}
     >
       {icon}
     </a>
   );
 }
 
+
 function Toast({ type, message }) {
   return (
-    <div className={`fixed top-6 right-6 px-5 py-3 rounded-xl text-white shadow-lg ${type === "success" ? "bg-emerald-500" : "bg-red-500"}`}>
+    <div
+      className={`fixed top-6 right-6 px-5 py-3 rounded-xl text-white shadow-lg ${
+        type === "success" ? "bg-emerald-500" : "bg-red-500"
+      }`}
+    >
       {message}
     </div>
   );
@@ -347,31 +403,24 @@ function LegalModal({ title, onClose }) {
 
         {title === "Terms of Service" && (
           <p className="text-sm leading-relaxed">
-            Prakura IT Solutions delivers enterprise-grade Learning Management Systems (LMS),
-            Training Management Systems (TMS), and Human Resource Management Systems (HRMS)
-            designed for professional training, academic institutions, and corporate
-            environments. By accessing this platform, users agree to comply with all
-            organizational policies, security guidelines, and applicable laws. Users are
-            responsible for maintaining confidentiality of login credentials and ensuring
-            their account is not accessed by unauthorized individuals. Any misuse, security
-            breach attempts, or violation of acceptable usage policies may result in account
-            suspension or termination. Prakura IT Solutions reserves the right to enhance,
-            modify, or discontinue features to maintain system reliability, compliance, and
-            performance.
+            Prakura IT Solutions delivers enterprise-grade LMS, TMS, and HRMS platforms
+            designed for professional training and corporate environments. Users must
+            comply with security policies, maintain confidentiality of credentials,
+            and avoid misuse of platform resources. Unauthorized access, data misuse,
+            or violation of acceptable use policies may result in suspension or
+            termination of access. Prakura IT Solutions reserves the right to update
+            features, policies, and services to maintain compliance and performance.
           </p>
         )}
 
         {title === "Privacy Policy" && (
           <p className="text-sm leading-relaxed">
-            Prakura IT Solutions is committed to protecting user privacy and data integrity.
-            We collect only essential information such as email addresses, authentication
-            credentials, role-based access details, and usage logs to ensure secure and
-            reliable platform operation. User data is never sold or shared with third
-            parties except when required by law or regulatory authorities. Robust technical
-            and administrative safeguards are implemented to protect information against
-            unauthorized access, loss, or misuse. By using this platform, users acknowledge
-            and consent to the collection, processing, and storage of data in accordance
-            with this Privacy Policy.
+            Prakura IT Solutions values user privacy and collects only essential
+            information required for authentication, role-based access, and system
+            security. Personal data is not sold or shared with third parties. Strong
+            safeguards are implemented to protect information from unauthorized
+            access, loss, or misuse. By using this platform, users consent to data
+            processing practices described in this policy.
           </p>
         )}
       </div>
@@ -403,7 +452,10 @@ function ForgotModal({ onClose }) {
           className="w-full px-4 py-2 border rounded mb-2"
         />
         {msg && <p className="text-xs text-emerald-600 mb-2">{msg}</p>}
-        <button onClick={send} className="w-full py-2 bg-indigo-600 text-white rounded">
+        <button
+          onClick={send}
+          className="w-full py-2 bg-indigo-600 text-white rounded"
+        >
           Send Reset Link
         </button>
       </div>
