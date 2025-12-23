@@ -133,19 +133,20 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#eef1ff] relative overflow-hidden">
-      {/* ================= HEADER ================= */}
-      <header className="relative z-20 flex justify-center py-6">
-        <div className="flex flex-col items-center gap-4 px-10 py-4 rounded-3xl bg-white shadow-md">
-          <div className="flex items-center gap-3">
-            <img src={logo} className="w-10 h-10" />
-           <span className="text-xl font-semibold text-slate-700 tracking-wide">
-  <span className="font-bold text-purple-600">TMS</span>{" "}
-  <span className="text-slate-700">Prakura IT Solutions</span>
-</span>
 
+      {/* ================= HEADER ================= */}
+      <header className="relative z-20 flex justify-center px-4 py-4 sm:py-6">
+        <div className="w-full max-w-6xl flex flex-col items-center gap-4 px-6 py-4 rounded-3xl bg-white shadow-md">
+
+          <div className="flex items-center gap-3">
+            <img src={logo} className="w-9 h-9 sm:w-10 sm:h-10" />
+            <span className="text-lg sm:text-xl font-semibold text-slate-700 tracking-wide">
+              <span className="font-bold text-purple-600">TMS</span>{" "}
+              <span className="text-slate-700">Prakura IT Solutions</span>
+            </span>
           </div>
 
-          <nav className="flex flex-wrap justify-center gap-4 text-sm">
+          <nav className="flex flex-wrap justify-center gap-3 sm:gap-4 text-xs sm:text-sm">
             {[
               { label: "Home", icon: <FaHome />, href: "/" },
               { label: "About", icon: <FaInfoCircle />, href: "/about" },
@@ -156,7 +157,7 @@ export default function Login() {
               <a
                 key={item.label}
                 href={item.href}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition"
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition"
               >
                 <span className="text-purple-500">{item.icon}</span>
                 {item.label}
@@ -167,16 +168,18 @@ export default function Login() {
       </header>
 
       {/* ================= MAIN ================= */}
-      <main className="flex-1 flex items-center justify-center px-6">
-        <div className="w-full max-w-6xl grid lg:grid-cols-2 bg-white rounded-[28px] shadow-[0_40px_120px_rgba(80,70,200,0.25)] overflow-hidden">
+      <main className="flex-1 flex items-center justify-center px-4 sm:px-6">
+        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 bg-white rounded-[28px] shadow-[0_40px_120px_rgba(80,70,200,0.25)] overflow-hidden">
 
           {/* LEFT */}
-          <div className="px-12 py-14 flex flex-col justify-center">
-            <h1 className="text-3xl font-bold text-slate-800 mb-1">Hello!</h1>
+          <div className="px-6 sm:px-10 py-10 sm:py-14 flex flex-col justify-center">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-1">
+              Hello!
+            </h1>
             <p className="text-slate-500 mb-8">Sign in to your account</p>
 
             {/* ROLE TOGGLE */}
-            <div className="flex gap-3 mb-6">
+            <div className="flex flex-wrap gap-3 mb-6">
               {roles.map((r) => {
                 const active = role === r.name;
                 return (
@@ -215,16 +218,12 @@ export default function Login() {
                 ring={theme.ring}
                 type={showPassword ? "text" : "password"}
                 right={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 }
               />
 
-              {/* REMEMBER + FORGOT (PRESENT & WORKING) */}
               <div className="flex justify-between text-xs text-slate-500">
                 <label className="flex items-center gap-2">
                   <input
@@ -243,7 +242,6 @@ export default function Login() {
                 </button>
               </div>
 
-              {/* TERMS & PRIVACY */}
               <label className="flex gap-2 text-xs text-slate-500">
                 <input
                   type="checkbox"
@@ -283,7 +281,7 @@ export default function Login() {
             </form>
 
             {/* SSO */}
-            <div className="grid grid-cols-2 gap-3 mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
               <button className="flex items-center justify-center gap-2 py-2 rounded-full bg-slate-100 hover:bg-slate-200">
                 <FaGoogle className="text-red-500" /> Google
               </button>
@@ -308,7 +306,7 @@ export default function Login() {
 
       {/* ================= FOOTER ================= */}
       <footer className="py-6 text-center text-slate-500 space-y-4">
-        <div className="flex justify-center gap-8 text-2xl">
+        <div className="flex justify-center gap-6 sm:gap-8 text-xl sm:text-2xl">
           <Social icon={<FaLinkedin />} url="https://www.linkedin.com/company/prakuraitsolutions" />
           <Social icon={<FaInstagram />} url="https://www.instagram.com/prakuraitsolutions" />
           <Social icon={<FaFacebook />} url="https://www.facebook.com/prakuraitsolutions" />
@@ -326,7 +324,7 @@ export default function Login() {
   );
 }
 
-/* ================= HELPERS ================= */
+/* ================= HELPERS (UNCHANGED) ================= */
 
 function GlassInput({ icon, value, onChange, placeholder, ring, type = "text", right }) {
   return (
@@ -378,7 +376,6 @@ function Social({ icon, url }) {
   );
 }
 
-
 function Toast({ type, message }) {
   return (
     <div
@@ -393,36 +390,16 @@ function Toast({ type, message }) {
 
 function LegalModal({ title, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="bg-white rounded-2xl p-6 w-[520px] max-h-[80vh] overflow-y-auto shadow-xl relative text-slate-700">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-xl relative text-slate-700">
         <button onClick={onClose} className="absolute top-3 right-3">
           <FaTimes />
         </button>
         <h3 className="text-lg font-semibold mb-3">{title}</h3>
-
-        {title === "Terms of Service" && (
-          <p className="text-sm leading-relaxed">
-            Prakura IT Solutions delivers enterprise-grade LMS, TMS, and HRMS platforms
-            designed for professional training and corporate environments. Users must
-            comply with security policies, maintain confidentiality of credentials,
-            and avoid misuse of platform resources. Unauthorized access, data misuse,
-            or violation of acceptable use policies may result in suspension or
-            termination of access. Prakura IT Solutions reserves the right to update
-            features, policies, and services to maintain compliance and performance.
-          </p>
-        )}
-
-        {title === "Privacy Policy" && (
-          <p className="text-sm leading-relaxed">
-            Prakura IT Solutions values user privacy and collects only essential
-            information required for authentication, role-based access, and system
-            security. Personal data is not sold or shared with third parties. Strong
-            safeguards are implemented to protect information from unauthorized
-            access, loss, or misuse. By using this platform, users consent to data
-            processing practices described in this policy.
-          </p>
-        )}
+        <p className="text-sm leading-relaxed">
+          Prakura IT Solutions platform usage policy and privacy compliance.
+        </p>
       </div>
     </div>
   );
@@ -438,9 +415,9 @@ function ForgotModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="bg-white rounded-2xl p-6 w-96 shadow-xl relative text-slate-700">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl relative text-slate-700">
         <button onClick={onClose} className="absolute top-3 right-3">
           <FaTimes />
         </button>

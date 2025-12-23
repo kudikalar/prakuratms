@@ -31,7 +31,7 @@ export default function Payments() {
     users.students.forEach((s) => {
       if (!updated[s.id]) {
         updated[s.id] = {
-          total: DEFAULT_TOTAL_FEE, // ✅ AUTO ₹45,000
+          total: DEFAULT_TOTAL_FEE,
           paid: 0,
           deadline: "",
           lastPayment: null,
@@ -111,18 +111,85 @@ export default function Payments() {
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold">Payments Overview</h2>
 
-      <div className="bg-white rounded-2xl shadow overflow-hidden">
-        <table className="w-full text-sm table-fixed">
+      {/* ================= MOBILE TOTAL SUMMARY (ADDED – REQUIRED FIX) ================= */}
+      <div className="md:hidden">
+        <div className="rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-pink-500/10 p-4 shadow space-y-3">
+          <div className="flex justify-between font-semibold">
+            <span>Total Fee</span>
+            <span>₹{totalFee}</span>
+          </div>
+          <div className="flex justify-between font-semibold text-emerald-600">
+            <span>Collected</span>
+            <span>₹{totalPaid}</span>
+          </div>
+          <div className="flex justify-between font-semibold text-red-600">
+            <span>Pending</span>
+            <span>₹{totalDue}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= MOBILE CARDS ================= */}
+      <div className="md:hidden space-y-4">
+        {paginated.map((s) => (
+          <div key={s.id} className="bg-white rounded-2xl p-4 shadow">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-semibold">{s.name}</h3>
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                  s.status === "PAID"
+                    ? "bg-green-100 text-green-700"
+                    : s.status === "OVERDUE"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-yellow-100 text-yellow-700"
+                }`}
+              >
+                {s.status}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div><b>Phone:</b> {s.phone}</div>
+              <div><b>Total:</b> ₹{s.total}</div>
+              <div className="text-emerald-600"><b>Paid:</b> ₹{s.paid}</div>
+              <div className="text-red-600"><b>Due:</b> ₹{s.due}</div>
+              <div className="col-span-2"><b>Last Pay:</b> {s.lastPayment}</div>
+            </div>
+
+            <div className="flex gap-4 mt-4">
+              <button
+                onClick={() => setSelectedStudent(s)}
+                className="text-purple-600 font-medium"
+              >
+                Add Payment
+              </button>
+
+              {s.status !== "PAID" && (
+                <button
+                  onClick={() => sendWhatsAppReminder(s)}
+                  className="text-green-600 text-xl"
+                >
+                  <FaWhatsapp />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ================= DESKTOP TABLE ================= */}
+      <div className="hidden md:block bg-white rounded-2xl shadow overflow-x-auto">
+        <table className="w-full text-sm border-collapse">
           <thead className="bg-slate-50 border-b">
             <tr>
-              <th className="p-3 w-40">Student</th>
-              <th className="w-32">Phone</th>
-              <th className="w-28">Total</th>
-              <th className="w-24">Paid</th>
-              <th className="w-24">Due</th>
-              <th className="w-32">Last Payment</th>
-              <th className="w-28">Status</th>
-              <th className="w-28 text-center">Action</th>
+              <th className="p-3 w-[200px] text-left">Student</th>
+              <th className="w-[140px] text-left">Phone</th>
+              <th className="w-[120px] text-center">Total</th>
+              <th className="w-[120px] text-center">Paid</th>
+              <th className="w-[120px] text-center">Due</th>
+              <th className="w-[160px] text-center">Last Payment</th>
+              <th className="w-[120px] text-center">Status</th>
+              <th className="w-[140px] text-center">Action</th>
             </tr>
           </thead>
 
@@ -131,11 +198,11 @@ export default function Payments() {
               <tr key={s.id} className="border-t hover:bg-slate-50">
                 <td className="p-3 font-medium">{s.name}</td>
                 <td>{s.phone}</td>
-                <td>₹{s.total}</td>
-                <td className="text-emerald-600">₹{s.paid}</td>
-                <td className="text-red-600">₹{s.due}</td>
-                <td>{s.lastPayment}</td>
-                <td>
+                <td className="text-center">₹{s.total}</td>
+                <td className="text-center text-emerald-600">₹{s.paid}</td>
+                <td className="text-center text-red-600">₹{s.due}</td>
+                <td className="text-center">{s.lastPayment}</td>
+                <td className="text-center">
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-semibold ${
                       s.status === "PAID"
@@ -148,38 +215,35 @@ export default function Payments() {
                     {s.status}
                   </span>
                 </td>
-                <td className="flex justify-center gap-3">
-                  <button
-                    onClick={() => setSelectedStudent(s)}
-                    className="text-purple-600"
-                  >
-                    Add
-                  </button>
-                  {s.status !== "PAID" && (
+                <td>
+                  <div className="flex justify-center gap-3">
                     <button
-                      onClick={() => sendWhatsAppReminder(s)}
-                      className="text-green-600"
+                      onClick={() => setSelectedStudent(s)}
+                      className="text-purple-600 font-medium"
                     >
-                      <FaWhatsapp />
+                      Add
                     </button>
-                  )}
+                    {s.status !== "PAID" && (
+                      <button
+                        onClick={() => sendWhatsAppReminder(s)}
+                        className="text-green-600"
+                      >
+                        <FaWhatsapp />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
 
-          {/* TOTAL BAR */}
           <tfoot>
             <tr>
               <td colSpan={8}>
-                <div className="m-4 rounded-xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-pink-500/10 backdrop-blur-xl px-6 py-4 flex justify-between font-semibold">
+                <div className="m-4 rounded-xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-pink-500/10 px-6 py-4 flex justify-between font-semibold">
                   <span>Total Fee: ₹{totalFee}</span>
-                  <span className="text-emerald-600">
-                    Collected: ₹{totalPaid}
-                  </span>
-                  <span className="text-red-600">
-                    Pending: ₹{totalDue}
-                  </span>
+                  <span className="text-emerald-600">Collected: ₹{totalPaid}</span>
+                  <span className="text-red-600">Pending: ₹{totalDue}</span>
                 </div>
               </td>
             </tr>
@@ -190,8 +254,7 @@ export default function Payments() {
       {/* PAGINATION */}
       <div className="flex justify-between text-sm">
         <span>
-          Showing {start + 1}–{Math.min(start + PAGE_SIZE, rows.length)} of{" "}
-          {rows.length}
+          Showing {start + 1}–{Math.min(start + PAGE_SIZE, rows.length)} of {rows.length}
         </span>
         <div className="flex gap-2">
           {[...Array(totalPages)].map((_, i) => (
@@ -199,9 +262,7 @@ export default function Payments() {
               key={i}
               onClick={() => setPage(i + 1)}
               className={`px-3 py-1 rounded ${
-                page === i + 1
-                  ? "bg-purple-600 text-white"
-                  : "border"
+                page === i + 1 ? "bg-purple-600 text-white" : "border"
               }`}
             >
               {i + 1}
@@ -226,7 +287,6 @@ export default function Payments() {
 function AddPaymentModal({ student, onClose, onSave }) {
   const [amount, setAmount] = useState("");
   const [mode, setMode] = useState("UPI");
-
   const [editingTotal, setEditingTotal] = useState(false);
   const [total, setTotal] = useState(student.total);
 
@@ -237,7 +297,6 @@ function AddPaymentModal({ student, onClose, onSave }) {
       <div className="bg-white w-96 rounded-2xl p-6 space-y-4 shadow-xl">
         <h3 className="text-lg font-semibold">Add Payment</h3>
 
-        {/* TOTAL / PAID / DUE */}
         <div className="bg-slate-50 rounded-xl p-3 text-sm space-y-2">
           <div className="flex justify-between items-center">
             <span>Total Fee</span>

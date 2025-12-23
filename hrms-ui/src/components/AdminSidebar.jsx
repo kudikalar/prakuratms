@@ -164,6 +164,14 @@ export default function AdminSidebar() {
       ? storedLogo
       : PrakuraLogo;
 
+  /* 🔴 ADDED: GLOBAL MOBILE OPEN LISTENER (NO EXISTING CODE TOUCHED) */
+  useEffect(() => {
+    const openSidebar = () => setMobileOpen(true);
+    window.addEventListener("OPEN_ADMIN_SIDEBAR", openSidebar);
+    return () =>
+      window.removeEventListener("OPEN_ADMIN_SIDEBAR", openSidebar);
+  }, []);
+
   useEffect(() => {
     const active = MENU.find((menu) =>
       menu.items.some((i) => location.pathname.startsWith(i.path))
@@ -188,7 +196,6 @@ export default function AdminSidebar() {
 
   return (
     <>
-      {/* MOBILE OVERLAY */}
       {mobileOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-30 md:hidden"
@@ -196,7 +203,6 @@ export default function AdminSidebar() {
         />
       )}
 
-      {/* SIDEBAR */}
       <aside
         className={`
           fixed md:static z-50
@@ -224,7 +230,10 @@ export default function AdminSidebar() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="md:hidden" onClick={() => setMobileOpen(false)}>
+            <button
+              className="md:hidden"
+              onClick={() => setMobileOpen(false)}
+            >
               <FaTimes />
             </button>
             <button
@@ -252,7 +261,7 @@ export default function AdminSidebar() {
         )}
 
         {/* MENU */}
-        <nav className="px-2 space-y-1 text-sm">
+        <nav className="px-2 space-y-1 text-sm overflow-y-auto pb-6">
           {filteredMenu.map((menu) => {
             const isParentActive = menu.items.some((i) =>
               location.pathname.startsWith(i.path)
