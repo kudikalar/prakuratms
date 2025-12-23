@@ -1,0 +1,49 @@
+:root {
+  /* Glass base */
+  --glass-bg: rgba(255, 255, 255, 0.22);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-blur: 24px;
+
+  /* Shadows */
+  --glass-shadow-lg: 0 30px 90px rgba(0, 0, 0, 0.35);
+  --glass-shadow-md: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+  /* Radius */
+  --glass-radius-lg: 24px;
+  --glass-radius-md: 18px;
+
+  /* Transitions */
+  --glass-transition: all 0.3s ease;
+}
+
+/* Base glass card */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow-lg);
+  transition: var(--glass-transition);
+}
+
+/* Hover lift */
+.glass-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 40px 110px rgba(0, 0, 0, 0.45);
+}
+
+/* Sizes */
+.glass-lg {
+  border-radius: var(--glass-radius-lg);
+}
+
+.glass-md {
+  border-radius: var(--glass-radius-md);
+}
+
+/* Glass header */
+.glass-header {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--glass-border);
+}
