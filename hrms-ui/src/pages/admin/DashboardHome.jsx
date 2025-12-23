@@ -1,12 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FaUserGraduate,
   FaChalkboardTeacher,
   FaArrowUp,
   FaUsersCog,
   FaTimes,
-  FaSearch,
-  FaBell,
 } from "react-icons/fa";
 import {
   BarChart,
@@ -17,34 +15,91 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-/* ================= MOCK DATA ================= */
+/* ================= HELPERS ================= */
 
-const enrollmentData = [
-  {
-    month: "Jan",
-    total: 120,
-    courses: [
-      { name: "Full Stack", value: 45, students: ["Anita", "Ramesh", "Karthik", "Divya"] },
-      { name: "Data Science", value: 35, students: ["Suresh", "Meena", "Rahul"] },
-      { name: "Python", value: 40, students: ["Arjun", "Priya", "Vikram"] },
-    ],
-  },
-  {
-    month: "Feb",
-    total: 180,
-    courses: [
-      { name: "Full Stack", value: 70, students: ["Naveen", "Anita", "Ramesh"] },
-      { name: "Data Science", value: 55, students: ["Meena", "Rahul", "Kiran"] },
-      { name: "Python", value: 55, students: ["Arjun", "Priya", "Vikram"] },
-    ],
-  },
-];
+const getUsers = () =>
+  JSON.parse(localStorage.getItem("users")) || {
+    students: [],
+    educators: [],
+    admins: [],
+  };
+
+const getCourses = () =>
+  JSON.parse(localStorage.getItem("courses")) || [];
 
 /* ================= DASHBOARD ================= */
 
 export default function DashboardHome() {
+  const [students, setStudents] = useState([]);
+  const [educators, setEducators] = useState([]);
+  const [admins, setAdmins] = useState([]);
+  const [courses, setCourses] = useState([]);
+
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
+
+  /* ================= LOAD REAL DATA ================= */
+  useEffect(() => {
+    const users = getUsers();
+    setStudents(users.students || []);
+    setEducators(users.educators || []);
+    setAdmins(users.admins || []);
+    setCourses(getCourses());
+  }, []);
+
+  /* ================= ENROLLMENT BY MONTH ================= */
+  const enrollmentData = useMemo(() => {
+    const map = {};
+
+    students.forEach((s) => {
+      const date = s.createdAt
+        ? new Date(s.createdAt)
+        : new Date();
+
+      const month = date.toLocaleString("default", {
+        month: "short",
+      });
+
+      if (!map[month]) {
+        map[month] = {
+          month,
+          total: 0,
+          courses: {},
+        };
+      }
+
+      map[month].total += 1;
+
+      const course = s.course || "General";
+
+      if (!map[month].courses[course]) {
+        map[month].courses[course] = {
+          name: course,
+          value: 0,
+          students: [],
+        };
+      }
+
+      map[month].courses[course].value += 1;
+      map[month].courses[course].students.push(s.name);
+    });
+
+    return Object.values(map).map((m) => ({
+      ...m,
+      courses: Object.values(m.courses),
+    }));
+  }, [students]);
+
+  /* ================= RECENT USERS ================= */
+  const recentStudents = useMemo(() => {
+    return [...students]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt || Date.now()) -
+          new Date(a.createdAt || Date.now())
+      )
+      .slice(0, 4);
+  }, [students]);
 
   return (
     <div
@@ -55,28 +110,26 @@ export default function DashboardHome() {
         via-slate-300/80
         to-slate-400/60
         backdrop-blur-xl
-        p-6
+        p-4 sm:p-6 lg:p-8
         space-y-8
       "
     >
-
-
       {/* ================= HEADER ================= */}
-      <div className="glass-panel px-6 py-4">
-        <h2 className="text-2xl font-semibold text-slate-800">
+      <div className="glass-panel px-4 sm:px-6 py-4">
+        <h2 className="text-xl sm:text-2xl font-semibold text-slate-800">
           Dashboard Overview
         </h2>
-        <p className="text-slate-600">
-          System statistics & administrative insights
+        <p className="text-sm text-slate-600">
+          Live system statistics & administrative insights
         </p>
       </div>
 
       {/* ================= STATS ================= */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Stat title="Total Students" value="1,248" percent="80%" />
-        <Stat title="Educators" value="64" percent="60%" />
-        <Stat title="Courses" value="132" percent="70%" />
-        <Stat title="Departments" value="12" percent="40%" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Stat title="Total Students" value={students.length} percent="80%" />
+        <Stat title="Educators" value={educators.length} percent="60%" />
+        <Stat title="Courses" value={courses.length} percent="70%" />
+        <Stat title="Admins" value={admins.length} percent="40%" />
       </div>
 
       {/* ================= CHARTS ================= */}
@@ -86,21 +139,23 @@ export default function DashboardHome() {
             Student Enrollment Growth
           </h3>
 
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart
-              data={enrollmentData}
-              onClick={(e) => {
-                if (e?.activePayload?.[0]?.payload) {
-                  setSelectedMonth(e.activePayload[0].payload);
-                }
-              }}
-            >
-              <XAxis dataKey="month" stroke="#64748b" />
-              <YAxis stroke="#64748b" />
-              <Tooltip />
-              <Bar dataKey="total" fill="#7c3aed" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="w-full h-[240px] sm:h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={enrollmentData}
+                onClick={(e) => {
+                  if (e?.activePayload?.[0]?.payload) {
+                    setSelectedMonth(e.activePayload[0].payload);
+                  }
+                }}
+              >
+                <XAxis dataKey="month" stroke="#64748b" />
+                <YAxis stroke="#64748b" />
+                <Tooltip />
+                <Bar dataKey="total" fill="#7c3aed" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
           <p className="text-xs text-slate-500 mt-2">
             Click a month to drill down
@@ -111,8 +166,10 @@ export default function DashboardHome() {
           <h3 className="font-semibold text-slate-700 mb-4">
             System Completion
           </h3>
-          <div className="w-36 h-36 rounded-full border-[10px] border-purple-300 flex items-center justify-center bg-white/40 backdrop-blur">
-            <span className="text-2xl font-bold text-slate-800">82%</span>
+          <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-[10px] border-purple-300 flex items-center justify-center bg-white/40 backdrop-blur">
+            <span className="text-xl sm:text-2xl font-bold text-slate-800">
+              {students.length > 0 ? "100%" : "0%"}
+            </span>
           </div>
         </GlassCard>
       </div>
@@ -120,7 +177,7 @@ export default function DashboardHome() {
       {/* ================= COURSE DRILL DOWN ================= */}
       {selectedMonth && (
         <GlassCard className="glass-hover">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
             <h4 className="font-semibold text-slate-800">
               {selectedMonth.month} – Course-wise Enrollment
             </h4>
@@ -132,21 +189,23 @@ export default function DashboardHome() {
             </button>
           </div>
 
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart
-              data={selectedMonth.courses}
-              onClick={(e) => {
-                if (e?.activePayload?.[0]?.payload) {
-                  setSelectedCourse(e.activePayload[0].payload);
-                }
-              }}
-            >
-              <XAxis dataKey="name" stroke="#64748b" />
-              <YAxis stroke="#64748b" />
-              <Tooltip />
-              <Bar dataKey="value" fill="#6366f1" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="w-full h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={selectedMonth.courses}
+                onClick={(e) => {
+                  if (e?.activePayload?.[0]?.payload) {
+                    setSelectedCourse(e.activePayload[0].payload);
+                  }
+                }}
+              >
+                <XAxis dataKey="name" stroke="#64748b" />
+                <YAxis stroke="#64748b" />
+                <Tooltip />
+                <Bar dataKey="value" fill="#6366f1" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </GlassCard>
       )}
 
@@ -162,11 +221,11 @@ export default function DashboardHome() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <GlassCard>
           <h3 className="font-semibold text-slate-700 mb-4">
-            Recently Added Users
+            Recently Added Students
           </h3>
-          {["Anita", "Ramesh", "Karthik", "Divya"].map((u) => (
-            <div key={u} className="flex justify-between text-sm mb-3">
-              <span className="text-slate-600">{u}</span>
+          {recentStudents.map((u) => (
+            <div key={u.id} className="flex justify-between text-sm mb-3">
+              <span className="text-slate-600">{u.name}</span>
               <span className="flex items-center gap-1 text-emerald-500">
                 <FaArrowUp /> Active
               </span>
@@ -178,9 +237,9 @@ export default function DashboardHome() {
           <h3 className="font-semibold text-slate-700 mb-4">
             User Distribution
           </h3>
-          <Detail icon={<FaUserGraduate />} label="Students" value="1,248" />
-          <Detail icon={<FaChalkboardTeacher />} label="Educators" value="64" />
-          <Detail icon={<FaUsersCog />} label="Admins" value="5" />
+          <Detail icon={<FaUserGraduate />} label="Students" value={students.length} />
+          <Detail icon={<FaChalkboardTeacher />} label="Educators" value={educators.length} />
+          <Detail icon={<FaUsersCog />} label="Admins" value={admins.length} />
         </GlassCard>
 
         <GlassCard>
@@ -199,12 +258,12 @@ export default function DashboardHome() {
 /* ================= STUDENT MODAL ================= */
 
 const StudentModal = ({ course, onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
+  <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
     <div
       className="absolute inset-0 bg-black/40 backdrop-blur-sm"
       onClick={onClose}
     />
-    <div className="relative glass-card w-[420px]">
+    <div className="relative glass-card w-full max-w-md sm:max-w-[420px]">
       <button
         onClick={onClose}
         className="absolute top-3 right-3 text-slate-500 hover:text-red-500"
@@ -242,7 +301,9 @@ const GlassCard = ({ children, className = "" }) => (
 const Stat = ({ title, value, percent }) => (
   <GlassCard className="glass-hover">
     <p className="text-sm text-slate-600">{title}</p>
-    <h3 className="text-3xl font-bold text-slate-800 mt-1">{value}</h3>
+    <h3 className="text-2xl sm:text-3xl font-bold text-slate-800 mt-1">
+      {value}
+    </h3>
 
     <div className="h-2 mt-3 rounded-full bg-slate-200">
       <div

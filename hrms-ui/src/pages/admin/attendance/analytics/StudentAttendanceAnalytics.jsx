@@ -105,11 +105,11 @@ export default function StudentAnalytics() {
   }, [processedData]);
 
   return (
-    <div className="p-6 space-y-6 text-gray-800">
+    <div className="p-4 md:p-6 space-y-6 text-gray-800">
 
       {/* HEADER */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <h1 className="text-xl md:text-2xl font-bold">
           Student Attendance Analytics
         </h1>
 
@@ -117,7 +117,7 @@ export default function StudentAnalytics() {
           placeholder="Search student..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-4 py-2 rounded-xl bg-white/60 border"
+          className="px-4 py-2 rounded-xl bg-white/60 border w-full md:w-72"
         />
       </div>
 
@@ -128,7 +128,7 @@ export default function StudentAnalytics() {
           <span className="font-semibold">Filters</span>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <Select label="Course" value={course} onChange={setCourse} options={courses} />
           <Select label="Batch" value={batch} onChange={setBatch} options={batchesList} />
           <Select label="Year" value={year} onChange={setYear} options={years} />
@@ -140,7 +140,7 @@ export default function StudentAnalytics() {
               setBatch("All");
               setYear("All");
             }}
-            className="px-4 py-2 rounded-xl bg-purple-600 text-white"
+            className="px-4 py-2 rounded-xl bg-purple-600 text-white w-full"
           >
             Reset
           </button>
@@ -148,14 +148,41 @@ export default function StudentAnalytics() {
       </div>
 
       {/* SUMMARY */}
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         <SummaryCard icon={<FaUsers />} label="Total Students" value={summary.totalStudents} />
         <SummaryCard icon={<FaChartPie />} label="Avg Attendance" value={`${summary.avgAttendance}%`} />
         <SummaryCard icon={<FaCheckCircle />} label="Regular Students" value={summary.regularStudents} />
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white/40 rounded-2xl shadow overflow-hidden">
+      {/* ================= MOBILE VIEW (ADDED) ================= */}
+      <div className="md:hidden space-y-3">
+        {processedData.map((s) => (
+          <div key={s.id} className="bg-white/50 p-4 rounded-xl shadow">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-semibold">{s.name}</h3>
+              <StatusBadge status={s.status} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div><span className="font-medium">Course:</span> {s.course}</div>
+              <div><span className="font-medium">Batch:</span> {s.batch}</div>
+              <div><span className="font-medium">Year:</span> {s.year}</div>
+              <div><span className="font-medium">Attendance:</span> {s.percentage}%</div>
+              <div className="text-green-700">Present: {s.present}</div>
+              <div className="text-red-600">Absent: {s.absent}</div>
+            </div>
+          </div>
+        ))}
+
+        {processedData.length === 0 && (
+          <div className="text-center text-gray-500 py-6">
+            No attendance data available
+          </div>
+        )}
+      </div>
+
+      {/* ================= DESKTOP TABLE (UNCHANGED) ================= */}
+      <div className="hidden md:block bg-white/40 rounded-2xl shadow overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-white/50">
             <tr>
@@ -196,6 +223,7 @@ export default function StudentAnalytics() {
           </tbody>
         </table>
       </div>
+
     </div>
   );
 }
