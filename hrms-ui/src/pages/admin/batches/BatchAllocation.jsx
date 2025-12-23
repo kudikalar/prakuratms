@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaUsers, FaCheckCircle, FaArrowLeft } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Toast from "../../../components/Toast";
@@ -12,6 +12,7 @@ const STATUS_COLORS = {
 };
 
 const getBatchStatus = (startDate, endDate) => {
+  if (!startDate || !endDate) return "ToStart";
   const today = new Date().setHours(0, 0, 0, 0);
   const start = new Date(startDate).setHours(0, 0, 0, 0);
   const end = new Date(endDate).setHours(0, 0, 0, 0);
@@ -29,29 +30,25 @@ export default function BatchAllocation() {
   const [allocations, setAllocations] = useState({});
   const [selectedBatch, setSelectedBatch] = useState("");
   const [selectedStudents, setSelectedStudents] = useState([]);
+  const [search, setSearch] = useState("");
   const [toast, setToast] = useState("");
 
   /* ================= INITIAL LOAD ================= */
   useEffect(() => {
-    const storedBatches = JSON.parse(localStorage.getItem("batches")) || [];
+    const storedBatches =
+      JSON.parse(localStorage.getItem("batches")) || [];
 
-    const storedStudents =
-      JSON.parse(localStorage.getItem("students")) || [
-        { id: 1, name: "Ramesh" },
-        { id: 2, name: "Anita" },
-        { id: 3, name: "Karthik" },
-        { id: 4, name: "Divya" },
-      ];
-
-    localStorage.setItem("students", JSON.stringify(storedStudents));
+    const users =
+      JSON.parse(localStorage.getItem("users")) || {};
+    const storedStudents = users.students || [];
 
     const storedAllocations =
       JSON.parse(localStorage.getItem("batchAllocations")) || {};
 
-    const correctedAllocations = {};
+    const normalizedAllocations = {};
 
     storedBatches.forEach((batch) => {
-      correctedAllocations[batch.id] = {
+      normalizedAllocations[batch.id] = {
         students: storedAllocations[batch.id]?.students || [],
         status: getBatchStatus(batch.startDate, batch.endDate),
       };
@@ -59,19 +56,28 @@ export default function BatchAllocation() {
 
     localStorage.setItem(
       "batchAllocations",
-      JSON.stringify(correctedAllocations)
+      JSON.stringify(normalizedAllocations)
     );
 
     setBatches(storedBatches);
     setStudents(storedStudents);
-    setAllocations(correctedAllocations);
+    setAllocations(normalizedAllocations);
   }, []);
 
   /* ================= LOAD STUDENTS FOR SELECTED BATCH ================= */
   useEffect(() => {
     if (!selectedBatch) return;
-    setSelectedStudents(allocations[selectedBatch]?.students || []);
+    setSelectedStudents(
+      allocations[selectedBatch]?.students || []
+    );
   }, [selectedBatch, allocations]);
+
+  /* ================= FILTER STUDENTS ================= */
+  const filteredStudents = useMemo(() => {
+    return students.filter((s) =>
+      s.name.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [students, search]);
 
   /* ================= TOGGLE STUDENT ================= */
   const toggleStudent = (id) => {
@@ -84,23 +90,37 @@ export default function BatchAllocation() {
 
   /* ================= SAVE ALLOCATION ================= */
   const saveAllocation = () => {
-    if (!selectedBatch) return;
+    if (!selectedBatch) {
+      setToast("⚠️ Please select a batch");
+      return;
+    }
 
-    const batch = batches.find((b) => b.id === Number(selectedBatch));
-    const status = getBatchStatus(batch.startDate, batch.endDate);
+    const updated = { ...allocations };
 
-    const updated = {
-      ...allocations,
-      [selectedBatch]: {
-        students: selectedStudents,
-        status,
-      },
+    // Remove student from other batches (1 student → 1 batch rule)
+    Object.keys(updated).forEach((batchId) => {
+      updated[batchId].students =
+        updated[batchId].students.filter(
+          (id) => !selectedStudents.includes(id)
+        );
+    });
+
+    const batch = batches.find(
+      (b) => b.id === Number(selectedBatch)
+    );
+
+    updated[selectedBatch] = {
+      students: selectedStudents,
+      status: getBatchStatus(batch.startDate, batch.endDate),
     };
 
     setAllocations(updated);
-    localStorage.setItem("batchAllocations", JSON.stringify(updated));
+    localStorage.setItem(
+      "batchAllocations",
+      JSON.stringify(updated)
+    );
 
-    setToast("✅ Batch allocation saved successfully");
+    setToast("✅ Batch allocation saved");
     setTimeout(() => setToast(""), 2500);
   };
 
@@ -111,7 +131,11 @@ export default function BatchAllocation() {
       .join(", ");
 
   const getStatusLabel = (st) =>
-    st === "ToStart" ? "To Start" : st === "InProgress" ? "In Progress" : "Done";
+    st === "ToStart"
+      ? "To Start"
+      : st === "InProgress"
+      ? "In Progress"
+      : "Done";
 
   return (
     <div className="max-w-6xl space-y-8 text-gray-800">
@@ -128,7 +152,7 @@ export default function BatchAllocation() {
         <div>
           <h2 className="text-2xl font-bold">Batch Allocation</h2>
           <p className="text-sm text-gray-600">
-            Assign students and track batch progress
+            Allocate students from Students module
           </p>
         </div>
       </div>
@@ -151,10 +175,20 @@ export default function BatchAllocation() {
 
         {selectedBatch && (
           <>
-            <p className="text-sm font-semibold mb-2">Assign Students</p>
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-sm font-semibold">
+                Assign Students ({selectedStudents.length})
+              </p>
+              <input
+                placeholder="Search student..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="p-2 rounded-lg bg-white/70 border text-sm"
+              />
+            </div>
 
             <div className="grid md:grid-cols-2 gap-2">
-              {students.map((s) => (
+              {filteredStudents.map((s) => (
                 <label
                   key={s.id}
                   className="flex items-center gap-3 bg-white/60 p-3 rounded-xl"
@@ -193,7 +227,9 @@ export default function BatchAllocation() {
               <div className="flex justify-between items-center mb-2">
                 <div>
                   <h3 className="font-semibold">{batch.name}</h3>
-                  <p className="text-sm text-gray-600">{batch.course}</p>
+                  <p className="text-sm text-gray-600">
+                    {batch.course}
+                  </p>
                 </div>
 
                 <span

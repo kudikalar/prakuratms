@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FaUsers,
   FaChartPie,
@@ -6,51 +6,8 @@ import {
   FaFilter,
 } from "react-icons/fa";
 
-/* ---------------- MOCK DATA (API READY) ---------------- */
-const studentsData = [
-  {
-    id: 1,
-    name: "Arjun Kumar",
-    course: "Full Stack",
-    batch: "B1",
-    year: 2024,
-    totalDays: 60,
-    present: 52,
-    absent: 8,
-  },
-  {
-    id: 2,
-    name: "Priya Sharma",
-    course: "Java",
-    batch: "B2",
-    year: 2024,
-    totalDays: 60,
-    present: 44,
-    absent: 16,
-  },
-  {
-    id: 3,
-    name: "Rahul Verma",
-    course: "Python",
-    batch: "B1",
-    year: 2023,
-    totalDays: 60,
-    present: 35,
-    absent: 25,
-  },
-  {
-    id: 4,
-    name: "Sneha Reddy",
-    course: "Full Stack",
-    batch: "B2",
-    year: 2023,
-    totalDays: 60,
-    present: 56,
-    absent: 4,
-  },
-];
+/* ================= HELPERS ================= */
 
-/* ---------------- HELPERS ---------------- */
 const getStatus = (percentage) => {
   if (percentage >= 85) return "Good";
   if (percentage >= 65) return "Average";
@@ -58,20 +15,64 @@ const getStatus = (percentage) => {
 };
 
 export default function StudentAnalytics() {
-  /* ---------------- SEARCH & FILTER STATES ---------------- */
+  const [students, setStudents] = useState([]);
+  const [attendanceStore, setAttendanceStore] = useState({});
+  const [batches, setBatches] = useState([]);
+
+  /* FILTER STATE */
   const [search, setSearch] = useState("");
   const [course, setCourse] = useState("All");
   const [batch, setBatch] = useState("All");
   const [year, setYear] = useState("All");
 
-  /* ---------------- FILTER OPTIONS ---------------- */
-  const courses = ["All", ...new Set(studentsData.map((s) => s.course))];
-  const batches = ["All", ...new Set(studentsData.map((s) => s.batch))];
-  const years = ["All", ...new Set(studentsData.map((s) => s.year))];
+  /* ================= LOAD DATA ================= */
+  useEffect(() => {
+    const users = JSON.parse(localStorage.getItem("users")) || {};
+    setStudents(users.students || []);
 
-  /* ---------------- FILTER + PROCESS DATA ---------------- */
+    setAttendanceStore(
+      JSON.parse(localStorage.getItem("attendance")) || {}
+    );
+
+    setBatches(JSON.parse(localStorage.getItem("batches")) || []);
+  }, []);
+
+  const getBatchName = (id) =>
+    batches.find((b) => String(b.id) === String(id))?.name || "—";
+
+  /* ================= PROCESS ATTENDANCE ================= */
   const processedData = useMemo(() => {
-    return studentsData
+    return students
+      .map((student) => {
+        let present = 0;
+        let totalDays = 0;
+
+        Object.values(attendanceStore).forEach((dayObj) => {
+          const batchAttendance = dayObj?.[student.batchId];
+          if (batchAttendance && batchAttendance[student.id]) {
+            totalDays++;
+            if (batchAttendance[student.id] === "Present") {
+              present++;
+            }
+          }
+        });
+
+        const absent = totalDays - present;
+        const percentage =
+          totalDays > 0
+            ? Math.round((present / totalDays) * 100)
+            : 0;
+
+        return {
+          ...student,
+          batch: getBatchName(student.batchId),
+          totalDays,
+          present,
+          absent,
+          percentage,
+          status: getStatus(percentage),
+        };
+      })
       .filter((s) => {
         return (
           s.name.toLowerCase().includes(search.toLowerCase()) &&
@@ -79,19 +80,17 @@ export default function StudentAnalytics() {
           (batch === "All" || s.batch === batch) &&
           (year === "All" || s.year === year)
         );
-      })
-      .map((s) => {
-        const percentage = Math.round(
-          (s.present / s.totalDays) * 100
-        );
-        return { ...s, percentage, status: getStatus(percentage) };
       });
-  }, [search, course, batch, year]);
+  }, [students, attendanceStore, search, course, batch, year]);
 
-  /* ---------------- SUMMARY ---------------- */
+  /* ================= FILTER OPTIONS ================= */
+  const courses = ["All", ...new Set(students.map((s) => s.course))];
+  const batchesList = ["All", ...new Set(processedData.map((s) => s.batch))];
+  const years = ["All", ...new Set(students.map((s) => s.year))];
+
+  /* ================= SUMMARY ================= */
   const summary = useMemo(() => {
     const totalStudents = processedData.length;
-
     const avgAttendance =
       processedData.reduce((acc, s) => acc + s.percentage, 0) /
       (totalStudents || 1);
@@ -106,10 +105,11 @@ export default function StudentAnalytics() {
   }, [processedData]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 text-gray-800">
+
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <h1 className="text-2xl font-bold tracking-wide">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">
           Student Attendance Analytics
         </h1>
 
@@ -117,111 +117,45 @@ export default function StudentAnalytics() {
           placeholder="Search student..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-4 py-2 rounded-xl bg-white/60 backdrop-blur border outline-none"
+          className="px-4 py-2 rounded-xl bg-white/60 border"
         />
       </div>
 
-     {/* FILTERS */}
-<div className="bg-white/40 backdrop-blur-xl p-4 rounded-2xl shadow">
-  <div className="flex items-center gap-3 mb-4">
-    <FaFilter className="text-purple-600" />
-    <span className="font-semibold">Filters</span>
-  </div>
+      {/* FILTERS */}
+      <div className="bg-white/40 p-4 rounded-2xl shadow">
+        <div className="flex items-center gap-2 mb-3">
+          <FaFilter className="text-purple-600" />
+          <span className="font-semibold">Filters</span>
+        </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-    {/* COURSE */}
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold text-gray-600">
-        Course
-      </label>
-      <select
-        value={course}
-        onChange={(e) => setCourse(e.target.value)}
-        className="px-3 py-2 rounded-xl bg-white/60 outline-none"
-      >
-        {courses.map((c) => (
-          <option key={c}>{c}</option>
-        ))}
-      </select>
-    </div>
+        <div className="grid md:grid-cols-4 gap-4">
+          <Select label="Course" value={course} onChange={setCourse} options={courses} />
+          <Select label="Batch" value={batch} onChange={setBatch} options={batchesList} />
+          <Select label="Year" value={year} onChange={setYear} options={years} />
 
-    {/* BATCH */}
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold text-gray-600">
-        Batch
-      </label>
-      <select
-        value={batch}
-        onChange={(e) => setBatch(e.target.value)}
-        className="px-3 py-2 rounded-xl bg-white/60 outline-none"
-      >
-        {batches.map((b) => (
-          <option key={b}>{b}</option>
-        ))}
-      </select>
-    </div>
+          <button
+            onClick={() => {
+              setSearch("");
+              setCourse("All");
+              setBatch("All");
+              setYear("All");
+            }}
+            className="px-4 py-2 rounded-xl bg-purple-600 text-white"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
 
-    {/* YEAR */}
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold text-gray-600">
-        Year
-      </label>
-      <select
-        value={year}
-        onChange={(e) => setYear(Number(e.target.value) || "All")}
-        className="px-3 py-2 rounded-xl bg-white/60 outline-none"
-      >
-        {years.map((y) => (
-          <option key={y}>{y}</option>
-        ))}
-      </select>
-    </div>
-
-    {/* RESET */}
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold text-transparent">
-        Reset
-      </label>
-      <button
-        onClick={() => {
-          setSearch("");
-          setCourse("All");
-          setBatch("All");
-          setYear("All");
-        }}
-        className="px-4 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition"
-      >
-        Reset Filters
-      </button>
-    </div>
-  </div>
-</div>
-
-
-      {/* SUMMARY CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <SummaryCard
-          icon={<FaUsers />}
-          label="Total Students"
-          value={summary.totalStudents}
-          color="purple"
-        />
-        <SummaryCard
-          icon={<FaChartPie />}
-          label="Average Attendance"
-          value={`${summary.avgAttendance}%`}
-          color="green"
-        />
-        <SummaryCard
-          icon={<FaCheckCircle />}
-          label="Regular Students"
-          value={summary.regularStudents}
-          color="blue"
-        />
+      {/* SUMMARY */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <SummaryCard icon={<FaUsers />} label="Total Students" value={summary.totalStudents} />
+        <SummaryCard icon={<FaChartPie />} label="Avg Attendance" value={`${summary.avgAttendance}%`} />
+        <SummaryCard icon={<FaCheckCircle />} label="Regular Students" value={summary.regularStudents} />
       </div>
 
       {/* TABLE */}
-      <div className="bg-white/40 backdrop-blur-xl rounded-2xl shadow overflow-hidden">
+      <div className="bg-white/40 rounded-2xl shadow overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-white/50">
             <tr>
@@ -238,10 +172,7 @@ export default function StudentAnalytics() {
 
           <tbody>
             {processedData.map((s) => (
-              <tr
-                key={s.id}
-                className="border-t border-white/30 hover:bg-white/30"
-              >
+              <tr key={s.id} className="border-t">
                 <td className="px-4 py-3 font-medium">{s.name}</td>
                 <td className="px-4 py-3 text-center">{s.course}</td>
                 <td className="px-4 py-3 text-center">{s.batch}</td>
@@ -250,19 +181,7 @@ export default function StudentAnalytics() {
                 <td className="px-4 py-3 text-center text-red-600">{s.absent}</td>
                 <td className="px-4 py-3 text-center font-semibold">{s.percentage}%</td>
                 <td className="px-4 py-3 text-center">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold
-                      ${
-                        s.status === "Good"
-                          ? "bg-green-200 text-green-800"
-                          : s.status === "Average"
-                          ? "bg-yellow-200 text-yellow-800"
-                          : "bg-red-200 text-red-800"
-                      }
-                    `}
-                  >
-                    {s.status}
-                  </span>
+                  <StatusBadge status={s.status} />
                 </td>
               </tr>
             ))}
@@ -270,7 +189,7 @@ export default function StudentAnalytics() {
             {processedData.length === 0 && (
               <tr>
                 <td colSpan="8" className="py-6 text-center text-gray-500">
-                  No data found for selected filters
+                  No attendance data available
                 </td>
               </tr>
             )}
@@ -281,15 +200,49 @@ export default function StudentAnalytics() {
   );
 }
 
-/* ---------------- REUSABLE CARD ---------------- */
-function SummaryCard({ icon, label, value, color }) {
+/* ================= UI ================= */
+
+function Select({ label, value, onChange, options }) {
   return (
-    <div className="bg-white/40 backdrop-blur-xl p-5 rounded-2xl shadow">
-      <div className={`flex items-center gap-3 text-${color}-600`}>
+    <div>
+      <label className="text-xs font-semibold text-gray-600">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2 rounded-xl bg-white/60"
+      >
+        {options.map((o) => (
+          <option key={o}>{o}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function SummaryCard({ icon, label, value }) {
+  return (
+    <div className="bg-white/40 p-5 rounded-2xl shadow">
+      <div className="flex items-center gap-3 text-purple-600">
         {icon}
         <span className="text-sm text-gray-600">{label}</span>
       </div>
       <h2 className="text-2xl font-bold mt-2">{value}</h2>
     </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  return (
+    <span
+      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+        status === "Good"
+          ? "bg-green-200 text-green-800"
+          : status === "Average"
+          ? "bg-yellow-200 text-yellow-800"
+          : "bg-red-200 text-red-800"
+      }`}
+    >
+      {status}
+    </span>
   );
 }

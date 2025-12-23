@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import Toast from "../../../components/Toast";
 
 /* ================= DEFAULTS ================= */
@@ -11,11 +11,17 @@ const emptyEducator = {
   course: "",
 };
 
+const isValidEmail = (email) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
 export default function Educators() {
   const [educators, setEducators] = useState([]);
   const [courses, setCourses] = useState([]);
   const [form, setForm] = useState(emptyEducator);
   const [editing, setEditing] = useState(false);
+
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const [confirmId, setConfirmId] = useState(null);
   const [toast, setToast] = useState("");
 
@@ -34,10 +40,48 @@ export default function Educators() {
     setCourses(storedCourses);
   }, []);
 
+  /* ================= VALIDATION ================= */
+  const validate = (data = form) => {
+    const e = {};
+
+    if (!data.name.trim()) {
+      e.name = "Educator name is required";
+    } else if (data.name.length < 3) {
+      e.name = "Name must be at least 3 characters";
+    }
+
+    if (!data.email.trim()) {
+      e.email = "Email address is required";
+    } else if (!isValidEmail(data.email)) {
+      e.email = "Enter a valid email address";
+    } else {
+      const exists = educators.some(
+        (ed) =>
+          ed.email.toLowerCase() === data.email.toLowerCase() &&
+          ed.id !== data.id
+      );
+      if (exists) e.email = "Email already exists";
+    }
+
+    if (!data.course) {
+      e.course = "Please assign a course";
+    }
+
+    return e;
+  };
+
+  useEffect(() => {
+    setErrors(validate());
+  }, [form]);
+
   /* ================= SAVE ================= */
   const saveEducator = () => {
-    if (!form.name || !form.email || !form.course) {
-      setToast("⚠️ Please fill all fields");
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    setTouched({ name: true, email: true, course: true });
+
+    if (Object.keys(validationErrors).length > 0) {
+      setToast("❌ Please fix validation errors");
       setTimeout(() => setToast(""), 2000);
       return;
     }
@@ -56,10 +100,7 @@ export default function Educators() {
       );
       setToast("✅ Educator updated successfully");
     } else {
-      updated = [
-        ...users.educators,
-        { ...form, id: Date.now() },
-      ];
+      updated = [...users.educators, { ...form, id: Date.now() }];
       setToast("✅ Educator added successfully");
     }
 
@@ -67,8 +108,7 @@ export default function Educators() {
     localStorage.setItem("users", JSON.stringify(users));
 
     setEducators(updated);
-    setForm(emptyEducator);
-    setEditing(false);
+    resetForm();
 
     setTimeout(() => setToast(""), 2500);
   };
@@ -77,6 +117,8 @@ export default function Educators() {
   const startEdit = (educator) => {
     setForm(educator);
     setEditing(true);
+    setErrors({});
+    setTouched({});
   };
 
   /* ================= DELETE ================= */
@@ -97,6 +139,13 @@ export default function Educators() {
     setTimeout(() => setToast(""), 2500);
   };
 
+  const resetForm = () => {
+    setForm(emptyEducator);
+    setEditing(false);
+    setErrors({});
+    setTouched({});
+  };
+
   return (
     <div className="max-w-5xl space-y-8 text-gray-800">
 
@@ -111,52 +160,107 @@ export default function Educators() {
       {/* ================= FORM ================= */}
       <GlassCard>
         <div className="grid md:grid-cols-3 gap-4">
-          <input
-            placeholder="Educator Name"
-            value={form.name}
-            onChange={(e) =>
-              setForm({ ...form, name: e.target.value })
-            }
-            className="p-3 rounded-xl bg-white/70 border"
-          />
 
-          <input
-            placeholder="Email Address"
-            value={form.email}
-            onChange={(e) =>
-              setForm({ ...form, email: e.target.value })
-            }
-            className="p-3 rounded-xl bg-white/70 border"
-          />
+          {/* NAME */}
+          <div>
+            <input
+              placeholder="Educator Name"
+              value={form.name}
+              onChange={(e) =>
+                setForm({ ...form, name: e.target.value })
+              }
+              onBlur={() =>
+                setTouched({ ...touched, name: true })
+              }
+              className={`p-3 w-full rounded-xl bg-white/70 border
+                ${errors.name && touched.name
+                  ? "border-red-400"
+                  : "border-gray-200"}`}
+            />
+            {errors.name && touched.name && (
+              <p className="text-xs text-red-600 mt-1">
+                {errors.name}
+              </p>
+            )}
+          </div>
 
-          <select
-            value={form.course}
-            onChange={(e) =>
-              setForm({ ...form, course: e.target.value })
-            }
-            className="p-3 rounded-xl bg-white/70 border"
-          >
-            <option value="">Assign Course</option>
-            {courses.map((c) => (
-              <option key={c.id} value={c.title}>
-                {c.title}
-              </option>
-            ))}
-          </select>
+          {/* EMAIL */}
+          <div>
+            <input
+              placeholder="Email Address"
+              value={form.email}
+              onChange={(e) =>
+                setForm({ ...form, email: e.target.value })
+              }
+              onBlur={() =>
+                setTouched({ ...touched, email: true })
+              }
+              className={`p-3 w-full rounded-xl bg-white/70 border
+                ${errors.email && touched.email
+                  ? "border-red-400"
+                  : "border-gray-200"}`}
+            />
+            {errors.email && touched.email && (
+              <p className="text-xs text-red-600 mt-1">
+                {errors.email}
+              </p>
+            )}
+          </div>
+
+          {/* COURSE */}
+          <div>
+            <select
+              value={form.course}
+              onChange={(e) =>
+                setForm({ ...form, course: e.target.value })
+              }
+              onBlur={() =>
+                setTouched({ ...touched, course: true })
+              }
+              className={`p-3 w-full rounded-xl bg-white/70 border
+                ${errors.course && touched.course
+                  ? "border-red-400"
+                  : "border-gray-200"}`}
+            >
+              <option value="">Assign Course</option>
+              {courses.map((c) => (
+                <option key={c.id} value={c.title}>
+                  {c.title}
+                </option>
+              ))}
+            </select>
+            {errors.course && touched.course && (
+              <p className="text-xs text-red-600 mt-1">
+                {errors.course}
+              </p>
+            )}
+          </div>
         </div>
 
-        <button
-          onClick={saveEducator}
-          className="
-            mt-4 flex items-center gap-2
-            px-6 py-2.5 rounded-full
-            bg-purple-600 hover:bg-purple-700
-            text-white font-semibold shadow
-          "
-        >
-          <FaPlus />
-          {editing ? "Update Educator" : "Add Educator"}
-        </button>
+        <div className="flex gap-3 mt-5">
+          <button
+            onClick={saveEducator}
+            className="
+              flex items-center gap-2
+              px-6 py-2.5 rounded-full
+              bg-purple-600 hover:bg-purple-700
+              text-white font-semibold shadow
+            "
+          >
+            <FaPlus />
+            {editing ? "Update Educator" : "Add Educator"}
+          </button>
+
+          {editing && (
+            <button
+              onClick={resetForm}
+              className="px-5 py-2.5 rounded-full bg-gray-100 text-gray-700 flex items-center gap-2"
+            >
+              <FaTimes />
+              Cancel
+            </button>
+          )}
+        </div>
       </GlassCard>
 
       {/* ================= LIST ================= */}
@@ -236,14 +340,12 @@ const ConfirmModal = ({ onCancel, onConfirm }) => (
 /* ================= GLASS CARD ================= */
 
 const GlassCard = ({ children }) => (
-  <div
-    className="
-      bg-white/40 backdrop-blur-[24px]
-      border border-white/40
-      rounded-3xl p-6
-      shadow-[0_30px_90px_rgba(0,0,0,0.2)]
-    "
-  >
+  <div className="
+    bg-white/40 backdrop-blur-[24px]
+    border border-white/40
+    rounded-3xl p-6
+    shadow-[0_30px_90px_rgba(0,0,0,0.2)]
+  ">
     {children}
   </div>
 );

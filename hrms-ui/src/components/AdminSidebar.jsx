@@ -86,7 +86,12 @@ const MENU = [
   {
     title: "Attendance Analytics",
     icon: <FaChartPie />,
-    items: [{ label: "Student Attendance Summary", path: "/admin/attendance/analytics" }],
+    items: [
+      {
+        label: "Student Attendance Summary",
+        path: "/admin/attendance/analytics",
+      },
+    ],
   },
   {
     title: "Assessments",
@@ -169,8 +174,8 @@ export default function AdminSidebar() {
   const filteredMenu = useMemo(() => {
     return MENU.filter((m) => allowedMenus.includes(m.title))
       .map((m) => {
-        const visibleItems = m.items.filter(
-          (i) => i.label.toLowerCase().includes(search.toLowerCase())
+        const visibleItems = m.items.filter((i) =>
+          i.label.toLowerCase().includes(search.toLowerCase())
         );
         return {
           ...m,
@@ -186,7 +191,7 @@ export default function AdminSidebar() {
       {/* MOBILE OVERLAY */}
       {mobileOpen && (
         <div
-           className="fixed inset-0 bg-black/40 z-30 md:hidden"
+          className="fixed inset-0 bg-black/40 z-30 md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -196,26 +201,30 @@ export default function AdminSidebar() {
         className={`
           fixed md:static z-50
           h-full md:h-screen
-          bg-white/80 backdrop-blur-xl border-r border-slate-200
+          bg-gradient-to-br
+          from-slate-200
+          via-slate-300/80
+          to-slate-400/60
+          backdrop-blur-xl
+          border-r border-white/40
           transition-transform duration-300
           ${collapsed ? "w-20" : "w-72"}
           ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
         {/* HEADER */}
-        <div className="px-4 py-4 flex justify-between items-center border-b">
+        <div className="px-4 py-4 flex justify-between items-center border-b border-white/40">
           <div className="flex items-center gap-3">
             <img src={logo} className="w-8 h-8" />
             {!collapsed && (
-              <span className="font-semibold text-slate-800">PRAKURA TMS</span>
+              <span className="font-semibold text-slate-800">
+                PRAKURA TMS
+              </span>
             )}
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              className="md:hidden"
-              onClick={() => setMobileOpen(false)}
-            >
+            <button className="md:hidden" onClick={() => setMobileOpen(false)}>
               <FaTimes />
             </button>
             <button
@@ -236,7 +245,7 @@ export default function AdminSidebar() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search menu..."
-                className="pl-9 w-full py-2 rounded-lg border text-sm"
+                className="pl-9 w-full py-2 rounded-lg bg-white/60 backdrop-blur border border-white/50 text-sm"
               />
             </div>
           </div>
@@ -256,11 +265,11 @@ export default function AdminSidebar() {
                     !collapsed &&
                     setOpen(open === menu.title ? null : menu.title)
                   }
-                  className={`flex justify-between items-center px-3 py-2 rounded-lg cursor-pointer
+                  className={`flex justify-between items-center px-3 py-2 rounded-lg cursor-pointer transition
                     ${
                       isParentActive
-                        ? "bg-purple-50 text-purple-700 font-semibold"
-                        : "hover:bg-purple-50 hover:text-purple-600"
+                        ? "bg-white/60 text-purple-700 font-semibold"
+                        : "hover:bg-white/50 hover:text-purple-600"
                     }`}
                 >
                   <div className="flex gap-3 items-center">
@@ -270,7 +279,9 @@ export default function AdminSidebar() {
 
                   {!collapsed && menu.items.length > 1 && (
                     <FaChevronDown
-                      className={`${open === menu.title ? "rotate-180" : ""}`}
+                      className={`transition ${
+                        open === menu.title ? "rotate-180" : ""
+                      }`}
                     />
                   )}
                 </div>
@@ -286,8 +297,8 @@ export default function AdminSidebar() {
                           `block px-3 py-1.5 rounded-md transition
                           ${
                             isActive
-                              ? "bg-purple-100 text-purple-700 font-medium"
-                              : "hover:bg-purple-50 hover:text-purple-600"
+                              ? "bg-purple-200/60 text-purple-800 font-medium"
+                              : "hover:bg-white/50 hover:text-purple-600"
                           }`
                         }
                       >
