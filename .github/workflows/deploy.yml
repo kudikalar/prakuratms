@@ -10,35 +10,38 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: frontend   # ✅ IMPORTANT FIX
-
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
+      # React Router v7 requires Node 20
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: hrms-ui/package-lock.json
 
       - name: Install dependencies
-        run: npm install
+        working-directory: hrms-ui
+        run: npm ci
 
       - name: Build project
+        working-directory: hrms-ui
         run: npm run build
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist   # ✅ IMPORTANT FIX
+          path: hrms-ui/dist
 
   deploy:
     needs: build
