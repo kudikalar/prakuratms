@@ -65,6 +65,13 @@ export default function Login() {
   const [role, setRole] = useState("Student");
   const [loading, setLoading] = useState(false);
 
+  /* ✅ ADDED (ONLY ADDITION) */
+  const [fieldErrors, setFieldErrors] = useState({
+    email: "",
+    password: "",
+    terms: "",
+  });
+
   const [forgotOpen, setForgotOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
@@ -83,20 +90,31 @@ export default function Login() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  /* ================= SINGLE VALIDATION ================= */
   const validate = () => {
-    if (!email || !emailRegex.test(email)) {
-      showToast("error", "Please enter a valid email address");
-      return false;
+    let valid = true;
+    let errors = { email: "", password: "", terms: "" };
+
+    if (!email) {
+      errors.email = "Email is required";
+      valid = false;
+    } else if (!emailRegex.test(email)) {
+      errors.email = "Enter a valid email address";
+      valid = false;
     }
+
     if (!password) {
-      showToast("error", "Password is required");
-      return false;
+      errors.password = "Password is required";
+      valid = false;
     }
+
     if (!acceptedTerms) {
-      showToast("error", "Please accept the Terms of Service and Privacy Policy");
-      return false;
+      errors.terms = "Please accept the Terms of Service and Privacy Policy";
+      valid = false;
     }
-    return true;
+
+    setFieldErrors(errors);
+    return valid;
   };
 
   const handleSubmit = async (e) => {
@@ -114,7 +132,6 @@ export default function Login() {
       const data = await res.json();
       if (!res.ok) {
         showToast("error", data.message || "Invalid credentials");
-        setLoading(false);
         return;
       }
 
@@ -133,11 +150,9 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#eef1ff] relative overflow-hidden">
-
       {/* ================= HEADER ================= */}
       <header className="relative z-20 flex justify-center px-4 py-4 sm:py-6">
         <div className="w-full max-w-6xl flex flex-col items-center gap-4 px-6 py-4 rounded-3xl bg-white shadow-md">
-
           <div className="flex items-center gap-3">
             <img src={logo} className="w-9 h-9 sm:w-10 sm:h-10" />
             <span className="text-lg sm:text-xl font-semibold text-slate-700 tracking-wide">
@@ -170,7 +185,6 @@ export default function Login() {
       {/* ================= MAIN ================= */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6">
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 bg-white rounded-[28px] shadow-[0_40px_120px_rgba(80,70,200,0.25)] overflow-hidden">
-
           {/* LEFT */}
           <div className="px-6 sm:px-10 py-10 sm:py-14 flex flex-col justify-center">
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-1">
@@ -186,12 +200,11 @@ export default function Login() {
                   <button
                     key={r.name}
                     onClick={() => setRole(r.name)}
-                    className={`px-5 py-2 rounded-full flex items-center gap-2 text-sm font-medium transition
-                      ${
-                        active
-                          ? "bg-purple-100 text-purple-700"
-                          : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                      }`}
+                    className={`px-5 py-2 rounded-full flex items-center gap-2 text-sm font-medium transition ${
+                      active
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    }`}
                   >
                     {r.icon}
                     {r.name}
@@ -205,31 +218,53 @@ export default function Login() {
               <GlassInput
                 icon={<FaEnvelope />}
                 value={email}
-                onChange={setEmail}
+                onChange={(v) => {
+                  setEmail(v);
+                  setFieldErrors((e) => ({ ...e, email: "" }));
+                }}
                 placeholder="E-mail"
                 ring={theme.ring}
               />
+              {fieldErrors.email && (
+                <p className="ml-4 text-xs text-red-500">
+                  {fieldErrors.email}
+                </p>
+              )}
 
               <GlassInput
                 icon={<FaLock />}
                 value={password}
-                onChange={setPassword}
+                onChange={(v) => {
+                  setPassword(v);
+                  setFieldErrors((e) => ({ ...e, password: "" }));
+                }}
                 placeholder="Password"
                 ring={theme.ring}
                 type={showPassword ? "text" : "password"}
                 right={
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
                     {showPassword ? <FaEyeSlash /> : <FaEye />}
                   </button>
                 }
               />
+              {fieldErrors.password && (
+                <p className="ml-4 text-xs text-red-500">
+                  {fieldErrors.password}
+                </p>
+              )}
 
               <div className="flex justify-between text-xs text-slate-500">
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={acceptedTerms}
-                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    onChange={(e) => {
+                      setAcceptedTerms(e.target.checked);
+                      setFieldErrors((er) => ({ ...er, terms: "" }));
+                    }}
                   />
                   Remember me
                 </label>
@@ -246,7 +281,10 @@ export default function Login() {
                 <input
                   type="checkbox"
                   checked={acceptedTerms}
-                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  onChange={(e) => {
+                    setAcceptedTerms(e.target.checked);
+                    setFieldErrors((er) => ({ ...er, terms: "" }));
+                  }}
                 />
                 <span>
                   I agree to the{" "}
@@ -267,6 +305,11 @@ export default function Login() {
                   </button>
                 </span>
               </label>
+              {fieldErrors.terms && (
+                <p className="ml-4 text-xs text-red-500">
+                  {fieldErrors.terms}
+                </p>
+              )}
 
               <button
                 disabled={loading}
