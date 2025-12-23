@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import AdminLayout from "./pages/admin/AdminLayout";
 
@@ -47,12 +47,14 @@ import Results from "./pages/admin/assessments/Results";
 
 export default function App() {
   return (
-    /* 🔴 IMPORTANT: GitHub Pages basename */
-    <BrowserRouter basename="/prakuratms">
+    <HashRouter>
       <Routes>
 
+        {/* ================= DEFAULT ================= */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
         {/* ================= AUTH ================= */}
-        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
 
         {/* ================= ADMIN / FINANCE LAYOUT ================= */}
         <Route
@@ -138,9 +140,10 @@ export default function App() {
         </Route>
 
         {/* ================= FALLBACK ================= */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
@@ -156,7 +159,7 @@ function ProtectedRoute({ children, roles }) {
   }
 
   if (!token || !user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (roles && !roles.includes(user.role)) {
