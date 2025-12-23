@@ -47,22 +47,19 @@ export default function DashboardHome() {
   const [selectedCourse, setSelectedCourse] = useState(null);
 
   return (
-    <div className="p-6 space-y-8">
+    <div
+      className="
+        min-h-screen
+        bg-gradient-to-br
+        from-slate-200
+        via-slate-300/80
+        to-slate-400/60
+        backdrop-blur-xl
+        p-6
+        space-y-8
+      "
+    >
 
-      {/* ================= TOP BAR ================= */}
-      <div className="flex items-center justify-between glass-panel px-6 py-4">
-        <div className="relative w-72">
-          <FaSearch className="absolute left-4 top-3.5 text-slate-400" />
-          <input
-            placeholder="Search dashboard..."
-            className="w-full pl-11 py-2.5 rounded-xl bg-white/60 backdrop-blur border border-slate-200 text-sm"
-          />
-        </div>
-
-        <div className="flex items-center gap-4 text-slate-500">
-          <FaBell className="hover:text-purple-600 cursor-pointer transition" />
-        </div>
-      </div>
 
       {/* ================= HEADER ================= */}
       <div className="glass-panel px-6 py-4">
@@ -74,8 +71,6 @@ export default function DashboardHome() {
         </p>
       </div>
 
-     
-
       {/* ================= STATS ================= */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Stat title="Total Students" value="1,248" percent="80%" />
@@ -86,7 +81,6 @@ export default function DashboardHome() {
 
       {/* ================= CHARTS ================= */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
         <GlassCard className="lg:col-span-2 glass-hover">
           <h3 className="font-semibold text-slate-700 mb-4">
             Student Enrollment Growth
@@ -242,9 +236,7 @@ const StudentModal = ({ course, onClose }) => (
 /* ================= UI HELPERS ================= */
 
 const GlassCard = ({ children, className = "" }) => (
-  <div className={`glass-card ${className}`}>
-    {children}
-  </div>
+  <div className={`glass-card ${className}`}>{children}</div>
 );
 
 const Stat = ({ title, value, percent }) => (
