@@ -1,40 +1,35 @@
-name: Deploy Prakura TMS to GitHub Pages
+name: Deploy React App to GitHub Pages
 
 on:
   push:
     branches:
-      - main
+      - release_1
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: npm
 
-      # 3️⃣ Install dependencies
-      - name: Install dependencies
-        run: npm install
+      - run: npm install
+      - run: npm run dev
 
-      # 4️⃣ Build project
-      - name: Build project
-        run: npm run build
-
-      # 5️⃣ Deploy to GitHub Pages
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4
+      - uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          path: dist
+
+  deploy:
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/deploy-pages@v4

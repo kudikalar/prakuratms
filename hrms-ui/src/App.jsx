@@ -38,7 +38,7 @@ import OverdueAlerts from "./pages/admin/finance/OverdueAlerts";
 /* ===== SETTINGS ===== */
 import InstituteProfile from "./pages/admin/settings/InstituteProfile";
 
-/* ===== ASSESSMENTS (FRONTEND ONLY) ===== */
+/* ===== ASSESSMENTS ===== */
 import AssessmentsDashboard from "./pages/admin/assessments/Dashboard";
 import CreateAssessment from "./pages/admin/assessments/CreateAssessment";
 import QuestionBank from "./pages/admin/assessments/QuestionBank";
@@ -47,7 +47,8 @@ import Results from "./pages/admin/assessments/Results";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    /* 🔴 IMPORTANT: GitHub Pages basename */
+    <BrowserRouter basename="/prakuratms">
       <Routes>
 
         {/* ================= AUTH ================= */}
