@@ -63,10 +63,10 @@ export default function Login() {
   const theme = roleConfig[role];
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  /* ================= FORCE HASH MODE ================= */
+  /* ✅ HASH ROUTER SAFE (PRODUCTION) */
   useEffect(() => {
     if (!window.location.hash) {
-      window.location.replace("/#/login");
+      window.location.hash = "#/login";
     }
   }, []);
 
@@ -154,7 +154,6 @@ export default function Login() {
 
         {/* LEFT */}
         <div className="p-10 flex flex-col justify-center">
-
           {/* Brand */}
           <div className="flex flex-col items-center mb-6">
             <img src={logo} className="w-20 h-20 mb-2" alt="logo" />
@@ -190,7 +189,6 @@ export default function Login() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-
             {/* Email */}
             <div>
               <div className="relative">

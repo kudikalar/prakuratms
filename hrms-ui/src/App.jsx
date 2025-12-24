@@ -2,54 +2,52 @@ import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import AdminLayout from "./pages/admin/AdminLayout";
 
-/* ===== DASHBOARD ===== */
+/* DASHBOARD */
 import DashboardHome from "./pages/admin/DashboardHome";
 
-/* ===== USERS ===== */
+/* USERS */
 import Admins from "./pages/admin/users/Admins";
 import Educators from "./pages/admin/users/Educators";
 import Students from "./pages/admin/users/Students";
 import StudentProfile from "./pages/admin/users/StudentProfile";
 
-/* ===== COURSES ===== */
+/* COURSES */
 import AllCourses from "./pages/admin/courses/AllCourses";
 import AddCourse from "./pages/admin/courses/AddCourse";
 import CourseCategories from "./pages/admin/courses/CourseCategories";
 import CourseContent from "./pages/admin/courses/CourseContent";
 
-/* ===== BATCHES ===== */
+/* BATCHES */
 import Batches from "./pages/admin/batches/Batches";
 import CreateBatch from "./pages/admin/batches/CreateBatch";
 import BatchAllocation from "./pages/admin/batches/BatchAllocation";
 import Timetable from "./pages/admin/batches/Timetable";
 
-/* ===== ATTENDANCE ===== */
+/* ATTENDANCE */
 import AttendanceDashboard from "./pages/admin/attendance/AttendanceDashboard";
 import StudentAttendanceAnalytics from "./pages/admin/attendance/analytics/StudentAttendanceAnalytics";
 
-/* ===== PAYMENTS ===== */
+/* PAYMENTS */
 import Payments from "./pages/admin/payments/Payments";
 import StudentPaymentDetails from "./pages/admin/payments/StudentPaymentDetails";
 
-/* ===== FINANCE ===== */
+/* FINANCE */
 import PaymentAnalytics from "./pages/admin/finance/PaymentAnalytics";
 import OverdueAlerts from "./pages/admin/finance/OverdueAlerts";
 
-/* ===== SETTINGS ===== */
+/* SETTINGS */
 import InstituteProfile from "./pages/admin/settings/InstituteProfile";
 
-/* ===== ASSESSMENTS ===== */
+/* ASSESSMENTS */
 import AssessmentsDashboard from "./pages/admin/assessments/Dashboard";
 import CreateAssessment from "./pages/admin/assessments/CreateAssessment";
 import QuestionBank from "./pages/admin/assessments/QuestionBank";
 import Evaluation from "./pages/admin/assessments/Evaluation";
 import Results from "./pages/admin/assessments/Results";
 
-/* ================= APP ================= */
-
 export default function App() {
   return (
-    <HashRouter basename="/prakuratms">
+    <HashRouter>
       <Routes>
 
         {/* ROOT */}
@@ -67,10 +65,7 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          {/* DEFAULT ADMIN */}
           <Route index element={<Navigate to="dashboard" replace />} />
-
-          {/* DASHBOARD */}
           <Route path="dashboard" element={<DashboardHome />} />
 
           {/* USERS */}
@@ -93,10 +88,7 @@ export default function App() {
 
           {/* ATTENDANCE */}
           <Route path="attendance" element={<AttendanceDashboard />} />
-          <Route
-            path="attendance/analytics"
-            element={<StudentAttendanceAnalytics />}
-          />
+          <Route path="attendance/analytics" element={<StudentAttendanceAnalytics />} />
 
           {/* ASSESSMENTS */}
           <Route path="assessments" element={<AssessmentsDashboard />} />
@@ -107,10 +99,7 @@ export default function App() {
 
           {/* PAYMENTS */}
           <Route path="payments" element={<Payments />} />
-          <Route
-            path="payments/:studentId"
-            element={<StudentPaymentDetails />}
-          />
+          <Route path="payments/:studentId" element={<StudentPaymentDetails />} />
 
           {/* FINANCE */}
           <Route

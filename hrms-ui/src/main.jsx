@@ -4,18 +4,26 @@ import App from "./App";
 import "./index.css";
 
 /**
- * ✅ FORCE HASH ROUTER MODE
- * This prevents 404 errors like:
- * http://localhost:5173/admin/dashboard
+ * ✅ FORCE CORRECT HASH + BASE ROUTING
+ * Handles:
+ *  - /admin/dashboard
+ *  - /login
+ *  - /
+ * Converts to:
+ *  - /prakuratms/#/admin/dashboard
  */
-(function enforceHashRouter() {
+(function enforceCorrectUrl() {
+  const BASE = "/prakuratms";
   const { pathname, hash, search } = window.location;
 
-  // If user hits /admin/dashboard or /login directly
-  if (!hash || !hash.startsWith("#/")) {
-    const newUrl = `/#${pathname}${search}`;
-    window.location.replace(newUrl);
-  }
+  // Already correct
+  if (pathname.startsWith(BASE) && hash.startsWith("#/")) return;
+
+  // Remove base if duplicated
+  const cleanPath = pathname.replace(BASE, "");
+
+  const target = `${BASE}/#${cleanPath || "/login"}${search}`;
+  window.location.replace(target);
 })();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
