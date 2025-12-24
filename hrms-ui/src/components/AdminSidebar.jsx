@@ -47,95 +47,90 @@ const MENU = [
   {
     title: "Dashboard",
     icon: <FaTachometerAlt />,
-    items: [{ label: "Overview", path: "/admin/dashboard" }],
+    items: [{ label: "Overview", path: "dashboard" }],
   },
   {
     title: "User Management",
     icon: <FaUsers />,
     items: [
-      { label: "Admins", path: "/admin/users/admins" },
-      { label: "Educators", path: "/admin/users/educators" },
-      { label: "Students", path: "/admin/users/students" },
+      { label: "Admins", path: "users/admins" },
+      { label: "Educators", path: "users/educators" },
+      { label: "Students", path: "users/students" },
     ],
   },
   {
     title: "Course Management",
     icon: <FaBookOpen />,
     items: [
-      { label: "All Courses", path: "/admin/courses" },
-      { label: "Add Course", path: "/admin/courses/add" },
-      { label: "Course Categories", path: "/admin/course-categories" },
-      { label: "Syllabus & Content", path: "/admin/course-content" },
+      { label: "All Courses", path: "courses" },
+      { label: "Add Course", path: "courses/add" },
+      { label: "Course Categories", path: "course-categories" },
+      { label: "Syllabus & Content", path: "course-content" },
     ],
   },
   {
     title: "Batch Management",
     icon: <FaUserGraduate />,
     items: [
-      { label: "Batches", path: "/admin/batches" },
-      { label: "Create Batch", path: "/admin/batches/create" },
-      { label: "Batch Allocation", path: "/admin/batches/allocation" },
-      { label: "Timetable", path: "/admin/batches/timetable" },
+      { label: "Batches", path: "batches" },
+      { label: "Create Batch", path: "batches/create" },
+      { label: "Batch Allocation", path: "batches/allocation" },
+      { label: "Timetable", path: "batches/timetable" },
     ],
   },
   {
     title: "Attendance",
     icon: <FaCalendarCheck />,
-    items: [{ label: "Attendance Dashboard", path: "/admin/attendance" }],
+    items: [{ label: "Attendance Dashboard", path: "attendance" }],
   },
   {
     title: "Attendance Analytics",
     icon: <FaChartPie />,
-    items: [
-      {
-        label: "Student Attendance Summary",
-        path: "/admin/attendance/analytics",
-      },
-    ],
+    items: [{ label: "Student Attendance Summary", path: "attendance/analytics" }],
   },
   {
     title: "Assessments",
     icon: <FaClipboardList />,
     items: [
-      { label: "Dashboard", path: "/admin/assessments" },
-      { label: "Create Assessment", path: "/admin/assessments/create" },
-      { label: "Question Bank", path: "/admin/assessments/questions" },
-      { label: "Evaluation", path: "/admin/assessments/evaluation" },
-      { label: "Results", path: "/admin/assessments/results" },
+      { label: "Dashboard", path: "assessments" },
+      { label: "Create Assessment", path: "assessments/create" },
+      { label: "Question Bank", path: "assessments/questions" },
+      { label: "Evaluation", path: "assessments/evaluation" },
+      { label: "Results", path: "assessments/results" },
     ],
   },
   {
     title: "Payments",
     icon: <FaMoneyBill />,
-    items: [{ label: "Payments Overview", path: "/admin/payments" }],
+    items: [{ label: "Payments Overview", path: "payments" }],
   },
   {
     title: "Finance",
     icon: <FaChartBar />,
     items: [
-      { label: "Payment Analytics", path: "/admin/finance/analytics" },
-      { label: "Overdue Alerts", path: "/admin/finance/alerts" },
+      { label: "Payment Analytics", path: "finance/analytics" },
+      { label: "Overdue Alerts", path: "finance/alerts" },
     ],
   },
   {
     title: "Notifications",
     icon: <FaBell />,
-    items: [{ label: "Announcements", path: "/admin/announcements" }],
+    items: [{ label: "Announcements", path: "announcements" }],
   },
   {
     title: "Reports",
     icon: <FaChartBar />,
-    items: [{ label: "Reports", path: "/admin/reports" }],
+    items: [{ label: "Reports", path: "reports" }],
   },
   {
     title: "Settings",
     icon: <FaCog />,
-    items: [{ label: "Institute Profile", path: "/admin/settings/institute" }],
+    items: [{ label: "Institute Profile", path: "settings/institute" }],
   },
   {
     title: "Security & Audit",
     icon: <FaShieldAlt />,
-    items: [{ label: "Activity Logs", path: "/admin/security/activity-logs" }],
+    items: [{ label: "Activity Logs", path: "security/activity-logs" }],
   },
 ];
 
@@ -164,7 +159,7 @@ export default function AdminSidebar() {
       ? storedLogo
       : PrakuraLogo;
 
-  /* 🔴 ADDED: GLOBAL MOBILE OPEN LISTENER (NO EXISTING CODE TOUCHED) */
+  /* MOBILE OPEN LISTENER */
   useEffect(() => {
     const openSidebar = () => setMobileOpen(true);
     window.addEventListener("OPEN_ADMIN_SIDEBAR", openSidebar);
@@ -174,7 +169,7 @@ export default function AdminSidebar() {
 
   useEffect(() => {
     const active = MENU.find((menu) =>
-      menu.items.some((i) => location.pathname.startsWith(i.path))
+      menu.items.some((i) => location.pathname.endsWith(i.path))
     );
     if (active) setOpen(active.title);
   }, [location.pathname]);
@@ -230,10 +225,7 @@ export default function AdminSidebar() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              className="md:hidden"
-              onClick={() => setMobileOpen(false)}
-            >
+            <button className="md:hidden" onClick={() => setMobileOpen(false)}>
               <FaTimes />
             </button>
             <button
@@ -262,63 +254,51 @@ export default function AdminSidebar() {
 
         {/* MENU */}
         <nav className="px-2 space-y-1 text-sm overflow-y-auto pb-6">
-          {filteredMenu.map((menu) => {
-            const isParentActive = menu.items.some((i) =>
-              location.pathname.startsWith(i.path)
-            );
-
-            return (
-              <div key={menu.title}>
-                <div
-                  onClick={() =>
-                    !collapsed &&
-                    setOpen(open === menu.title ? null : menu.title)
-                  }
-                  className={`flex justify-between items-center px-3 py-2 rounded-lg cursor-pointer transition
-                    ${
-                      isParentActive
-                        ? "bg-white/60 text-purple-700 font-semibold"
-                        : "hover:bg-white/50 hover:text-purple-600"
-                    }`}
-                >
-                  <div className="flex gap-3 items-center">
-                    <span className="text-purple-600">{menu.icon}</span>
-                    {!collapsed && menu.title}
-                  </div>
-
-                  {!collapsed && menu.items.length > 1 && (
-                    <FaChevronDown
-                      className={`transition ${
-                        open === menu.title ? "rotate-180" : ""
-                      }`}
-                    />
-                  )}
+          {filteredMenu.map((menu) => (
+            <div key={menu.title}>
+              <div
+                onClick={() =>
+                  !collapsed &&
+                  setOpen(open === menu.title ? null : menu.title)
+                }
+                className="flex justify-between items-center px-3 py-2 rounded-lg cursor-pointer hover:bg-white/50"
+              >
+                <div className="flex gap-3 items-center">
+                  <span className="text-purple-600">{menu.icon}</span>
+                  {!collapsed && menu.title}
                 </div>
 
-                {!collapsed && open === menu.title && (
-                  <div className="ml-9 mt-1 space-y-1">
-                    {menu.items.map((item) => (
-                      <NavLink
-                        key={item.path}
-                        to={item.path}
-                        onClick={() => setMobileOpen(false)}
-                        className={({ isActive }) =>
-                          `block px-3 py-1.5 rounded-md transition
-                          ${
-                            isActive
-                              ? "bg-purple-200/60 text-purple-800 font-medium"
-                              : "hover:bg-white/50 hover:text-purple-600"
-                          }`
-                        }
-                      >
-                        {item.label}
-                      </NavLink>
-                    ))}
-                  </div>
+                {!collapsed && menu.items.length > 1 && (
+                  <FaChevronDown
+                    className={`transition ${
+                      open === menu.title ? "rotate-180" : ""
+                    }`}
+                  />
                 )}
               </div>
-            );
-          })}
+
+              {!collapsed && open === menu.title && (
+                <div className="ml-9 mt-1 space-y-1">
+                  {menu.items.map((item) => (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setMobileOpen(false)}
+                      className={({ isActive }) =>
+                        `block px-3 py-1.5 rounded-md transition ${
+                          isActive
+                            ? "bg-purple-200/60 text-purple-800 font-medium"
+                            : "hover:bg-white/50 hover:text-purple-600"
+                        }`
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </nav>
       </aside>
     </>

@@ -5,6 +5,7 @@ import AdminSidebar from "../../components/AdminSidebar";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
+
   const user = useMemo(
     () => JSON.parse(localStorage.getItem("user") || "{}"),
     []
@@ -12,7 +13,8 @@ export default function AdminLayout() {
 
   const logout = () => {
     localStorage.clear();
-    navigate("/", { replace: true });
+    // ✅ FIXED: HashRouter-safe redirect
+    navigate("/login", { replace: true });
   };
 
   return (

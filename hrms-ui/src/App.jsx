@@ -45,18 +45,20 @@ import QuestionBank from "./pages/admin/assessments/QuestionBank";
 import Evaluation from "./pages/admin/assessments/Evaluation";
 import Results from "./pages/admin/assessments/Results";
 
+/* ================= APP ================= */
+
 export default function App() {
   return (
-    <HashRouter>
+    <HashRouter basename="/prakuratms">
       <Routes>
 
-        {/* ================= DEFAULT ================= */}
+        {/* ROOT */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* ================= AUTH ================= */}
+        {/* AUTH */}
         <Route path="/login" element={<Login />} />
 
-        {/* ================= ADMIN / FINANCE LAYOUT ================= */}
+        {/* ADMIN */}
         <Route
           path="/admin"
           element={
@@ -65,52 +67,52 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          {/* DEFAULT */}
+          {/* DEFAULT ADMIN */}
           <Route index element={<Navigate to="dashboard" replace />} />
 
-          {/* ================= DASHBOARD ================= */}
+          {/* DASHBOARD */}
           <Route path="dashboard" element={<DashboardHome />} />
 
-          {/* ================= USERS ================= */}
+          {/* USERS */}
           <Route path="users/admins" element={<Admins />} />
           <Route path="users/educators" element={<Educators />} />
           <Route path="users/students" element={<Students />} />
           <Route path="users/students/:id" element={<StudentProfile />} />
 
-          {/* ================= COURSES ================= */}
+          {/* COURSES */}
           <Route path="courses" element={<AllCourses />} />
           <Route path="courses/add" element={<AddCourse />} />
           <Route path="course-categories" element={<CourseCategories />} />
           <Route path="course-content" element={<CourseContent />} />
 
-          {/* ================= BATCHES ================= */}
+          {/* BATCHES */}
           <Route path="batches" element={<Batches />} />
           <Route path="batches/create" element={<CreateBatch />} />
           <Route path="batches/allocation" element={<BatchAllocation />} />
           <Route path="batches/timetable" element={<Timetable />} />
 
-          {/* ================= ATTENDANCE ================= */}
+          {/* ATTENDANCE */}
           <Route path="attendance" element={<AttendanceDashboard />} />
           <Route
             path="attendance/analytics"
             element={<StudentAttendanceAnalytics />}
           />
 
-          {/* ================= ASSESSMENTS ================= */}
+          {/* ASSESSMENTS */}
           <Route path="assessments" element={<AssessmentsDashboard />} />
           <Route path="assessments/create" element={<CreateAssessment />} />
           <Route path="assessments/questions" element={<QuestionBank />} />
           <Route path="assessments/evaluation" element={<Evaluation />} />
           <Route path="assessments/results" element={<Results />} />
 
-          {/* ================= PAYMENTS ================= */}
+          {/* PAYMENTS */}
           <Route path="payments" element={<Payments />} />
           <Route
             path="payments/:studentId"
             element={<StudentPaymentDetails />}
           />
 
-          {/* ================= FINANCE ================= */}
+          {/* FINANCE */}
           <Route
             path="finance/analytics"
             element={
@@ -128,7 +130,7 @@ export default function App() {
             }
           />
 
-          {/* ================= SETTINGS ================= */}
+          {/* SETTINGS */}
           <Route
             path="settings/institute"
             element={
@@ -139,7 +141,7 @@ export default function App() {
           />
         </Route>
 
-        {/* ================= FALLBACK ================= */}
+        {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/login" replace />} />
 
       </Routes>
@@ -147,11 +149,12 @@ export default function App() {
   );
 }
 
-/* ================= SAFE PROTECTED ROUTE ================= */
+/* ================= PROTECTED ROUTE ================= */
+
 function ProtectedRoute({ children, roles }) {
   const token = localStorage.getItem("token");
-
   let user = null;
+
   try {
     user = JSON.parse(localStorage.getItem("user"));
   } catch {
@@ -163,7 +166,7 @@ function ProtectedRoute({ children, roles }) {
   }
 
   if (roles && !roles.includes(user.role)) {
-    return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return children;
