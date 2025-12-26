@@ -5,15 +5,13 @@ on:
     branches:
       - development
 
-# Required for GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Avoid parallel deploy conflicts
 concurrency:
-  group: "github-pages"
+  group: github-pages
   cancel-in-progress: true
 
 jobs:
@@ -21,11 +19,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -33,18 +29,15 @@ jobs:
           cache: npm
           cache-dependency-path: hrms-ui/package-lock.json
 
-      # 3️⃣ Install dependencies
       - name: Install dependencies
         working-directory: hrms-ui
-        run: npm install
+        run: npm ci
 
-      # 4️⃣ Build frontend (Vite)
-      - name: Build frontend
+      - name: Build frontend (Vite)
         working-directory: hrms-ui
         run: npm run build
 
-      # 5️⃣ Upload dist folder for GitHub Pages
-      - name: Upload GitHub Pages artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: hrms-ui/dist
@@ -55,10 +48,8 @@ jobs:
 
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      # 6️⃣ Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
