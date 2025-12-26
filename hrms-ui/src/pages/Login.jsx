@@ -24,7 +24,7 @@ import {
 } from "react-icons/fa";
 
 import logo from "../assets/prakura-logo.png";
-
+import { APP_BASE } from "../utils/basePath";
 /* ================= ROLE CONFIG ================= */
 const roles = [
   { name: "Student", icon: <FaUserGraduate /> },
@@ -135,9 +135,11 @@ export default function Login() {
       if (rememberMe) localStorage.setItem("rememberMe", "true");
 
       showToast("success", "Login successful. Redirecting...");
-      setTimeout(() => {
-        window.location.replace(`/#${roleContent[role].redirect}`);
-      }, 1500);
+     setTimeout(() => {
+  window.location.replace(
+    `${APP_BASE}/#${roleContent[role].redirect}`
+  );
+}, 1500);
     } catch {
       showToast("error", "Server not reachable");
     } finally {
