@@ -3,7 +3,7 @@ name: Deploy Prakura TMS (Frontend)
 on:
   push:
     branches:
-      - release_1
+      - release_3_deploymentFix
 
 # Required for GitHub Pages
 permissions:
