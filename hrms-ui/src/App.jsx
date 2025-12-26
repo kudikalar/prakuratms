@@ -1,66 +1,104 @@
-import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import Login from "./pages/Login";
 import AdminLayout from "./pages/admin/AdminLayout";
 
-/* DASHBOARD */
+/* ===== DASHBOARD ===== */
 import DashboardHome from "./pages/admin/DashboardHome";
 
-/* USERS */
+/* ===== USERS ===== */
 import Admins from "./pages/admin/users/Admins";
 import Educators from "./pages/admin/users/Educators";
 import Students from "./pages/admin/users/Students";
 import StudentProfile from "./pages/admin/users/StudentProfile";
 
-/* COURSES */
+/* ===== COURSES ===== */
 import AllCourses from "./pages/admin/courses/AllCourses";
 import AddCourse from "./pages/admin/courses/AddCourse";
 import CourseCategories from "./pages/admin/courses/CourseCategories";
 import CourseContent from "./pages/admin/courses/CourseContent";
 
-/* BATCHES */
+/* ===== BATCHES ===== */
 import Batches from "./pages/admin/batches/Batches";
 import CreateBatch from "./pages/admin/batches/CreateBatch";
 import BatchAllocation from "./pages/admin/batches/BatchAllocation";
 import Timetable from "./pages/admin/batches/Timetable";
 
-/* ATTENDANCE */
+/* ===== ATTENDANCE ===== */
 import AttendanceDashboard from "./pages/admin/attendance/AttendanceDashboard";
 import StudentAttendanceAnalytics from "./pages/admin/attendance/analytics/StudentAttendanceAnalytics";
 
-/* PAYMENTS */
+/* ===== PAYMENTS ===== */
 import Payments from "./pages/admin/payments/Payments";
 import StudentPaymentDetails from "./pages/admin/payments/StudentPaymentDetails";
 
-/* FINANCE */
+/* ===== FINANCE ===== */
 import PaymentAnalytics from "./pages/admin/finance/PaymentAnalytics";
 import OverdueAlerts from "./pages/admin/finance/OverdueAlerts";
 
-/* SETTINGS */
+/* ===== NOTIFICATIONS ===== */
+import Announcements from "./pages/admin/notifications/Announcements";
+
+/* ===== SETTINGS ===== */
 import InstituteProfile from "./pages/admin/settings/InstituteProfile";
 
-/* ASSESSMENTS */
+/* ===== ASSESSMENTS ===== */
 import AssessmentsDashboard from "./pages/admin/assessments/Dashboard";
 import CreateAssessment from "./pages/admin/assessments/CreateAssessment";
 import QuestionBank from "./pages/admin/assessments/QuestionBank";
 import Evaluation from "./pages/admin/assessments/Evaluation";
 import Results from "./pages/admin/assessments/Results";
 
+/* ===== SECURITY ===== */
+import ActivityLogs from "./pages/admin/security/ActivityLogs";
+import SecurityAudit from "./pages/admin/security/SecurityAudit";
+
+/* ===== HELP & SUPPORT ===== */
+import FAQs from "./pages/admin/support/FAQs";
+import SupportTickets from "./pages/admin/support/SupportTickets";
+import ContactAdmin from "./pages/admin/support/ContactAdmin";
+
+/* ================= HELPERS ================= */
+
+// Scroll to top on route change (UX polish)
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [pathname]);
+  return null;
+}
+
+// Admin 404 (safe fallback)
+function AdminNotFound() {
+  return (
+    <div className="p-6 text-center text-slate-600">
+      Page not found
+    </div>
+  );
+}
+
+/* ================= APP ================= */
+
 export default function App() {
   return (
     <HashRouter>
-      <Routes>
+      <ScrollToTop />
 
+      <Routes>
         {/* ROOT */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* AUTH */}
+        {/* LOGIN */}
         <Route path="/login" element={<Login />} />
 
-        {/* ADMIN */}
+        {/* ADMIN (PROTECTED LAYOUT) */}
         <Route
           path="/admin"
           element={
-            <ProtectedRoute roles={["Admin", "Finance", "Counsellor"]}>
+            <ProtectedRoute
+              roles={["Admin", "Finance", "Counsellor", "Educator", "Student"]}
+            >
               <AdminLayout />
             </ProtectedRoute>
           }
@@ -102,37 +140,30 @@ export default function App() {
           <Route path="payments/:studentId" element={<StudentPaymentDetails />} />
 
           {/* FINANCE */}
-          <Route
-            path="finance/analytics"
-            element={
-              <ProtectedRoute roles={["Admin", "Finance"]}>
-                <PaymentAnalytics />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="finance/alerts"
-            element={
-              <ProtectedRoute roles={["Admin", "Finance"]}>
-                <OverdueAlerts />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="finance/analytics" element={<PaymentAnalytics />} />
+          <Route path="finance/alerts" element={<OverdueAlerts />} />
+
+          {/* NOTIFICATIONS */}
+          <Route path="notifications/announcements" element={<Announcements />} />
+
+          {/* SECURITY */}
+          <Route path="security/activity-logs" element={<ActivityLogs />} />
+          <Route path="security/audit" element={<SecurityAudit />} />
+
+          {/* HELP & SUPPORT */}
+          <Route path="support/faqs" element={<FAQs />} />
+          <Route path="support/tickets" element={<SupportTickets />} />
+          <Route path="support/contact" element={<ContactAdmin />} />
 
           {/* SETTINGS */}
-          <Route
-            path="settings/institute"
-            element={
-              <ProtectedRoute roles={["Admin"]}>
-                <InstituteProfile />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="settings/institute" element={<InstituteProfile />} />
+
+          {/* ADMIN 404 */}
+          <Route path="*" element={<AdminNotFound />} />
         </Route>
 
-        {/* FALLBACK */}
+        {/* GLOBAL FALLBACK */}
         <Route path="*" element={<Navigate to="/login" replace />} />
-
       </Routes>
     </HashRouter>
   );
@@ -150,12 +181,14 @@ function ProtectedRoute({ children, roles }) {
     user = null;
   }
 
+  // NOT LOGGED IN
   if (!token || !user) {
     return <Navigate to="/login" replace />;
   }
 
+  // ROLE NOT ALLOWED → SAFE REDIRECT
   if (roles && !roles.includes(user.role)) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin/dashboard" replace />;
   }
 
   return children;

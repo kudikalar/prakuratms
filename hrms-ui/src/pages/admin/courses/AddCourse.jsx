@@ -24,9 +24,9 @@ export default function AddCourse() {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState({ show: false, message: "" });
 
-  /* ================= LOAD COURSE FOR EDIT ================= */
+  /* ================= LOAD (EDIT) ================= */
   useEffect(() => {
     if (editId) {
       const courses = JSON.parse(localStorage.getItem("courses")) || [];
@@ -40,38 +40,23 @@ export default function AddCourse() {
     const e = {};
     const courses = JSON.parse(localStorage.getItem("courses")) || [];
 
-    if (!data.title.trim()) {
-      e.title = "Course title is required";
-    } else if (data.title.length < 5) {
-      e.title = "Title must be at least 5 characters";
-    } else {
+    if (!data.title.trim()) e.title = "Course title is required";
+    else if (data.title.length < 5)
+      e.title = "Minimum 5 characters required";
+    else {
       const exists = courses.some(
         (c) =>
           c.title.toLowerCase() === data.title.toLowerCase() &&
           String(c.id) !== String(editId)
       );
-      if (exists) e.title = "Course title already exists";
+      if (exists) e.title = "Course already exists";
     }
 
-    if (!data.category.trim()) {
-      e.category = "Category is required";
-    }
-
-    if (!data.duration.trim()) {
-      e.duration = "Duration is required";
-    }
-
-    if (!data.level) {
-      e.level = "Please select course level";
-    }
-
-    if (!data.mode) {
-      e.mode = "Please select course mode";
-    }
-
-    if (data.price && isNaN(data.price)) {
-      e.price = "Price must be a number";
-    }
+    if (!data.category.trim()) e.category = "Category is required";
+    if (!data.duration.trim()) e.duration = "Duration is required";
+    if (!data.level) e.level = "Select course level";
+    if (!data.mode) e.mode = "Select course mode";
+    if (data.price && isNaN(data.price)) e.price = "Must be numeric";
 
     return e;
   };
@@ -81,15 +66,8 @@ export default function AddCourse() {
   }, [form]);
 
   /* ================= HANDLERS ================= */
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const clearForm = () => {
-    setForm(emptyForm);
-    setErrors({});
-    setTouched({});
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -105,10 +83,7 @@ export default function AddCourse() {
       price: true,
     });
 
-    if (Object.keys(validationErrors).length > 0) {
-      setToast("❌ Please fix validation errors");
-      return;
-    }
+    if (Object.keys(validationErrors).length > 0) return;
 
     const courses = JSON.parse(localStorage.getItem("courses")) || [];
 
@@ -117,75 +92,88 @@ export default function AddCourse() {
         c.id === Number(editId) ? { ...form, id: c.id } : c
       );
       localStorage.setItem("courses", JSON.stringify(updated));
-      setToast("✅ Course updated successfully");
+      setToast({ show: true, message: "✅ Course updated successfully" });
     } else {
       localStorage.setItem(
         "courses",
         JSON.stringify([...courses, { ...form, id: Date.now() }])
       );
-      setToast("🎉 Course added successfully");
+      setToast({ show: true, message: "🎉 Course added successfully" });
     }
 
-    setTimeout(() => navigate("/admin/courses"), 1500);
+    setTimeout(() => navigate("/admin/courses"), 1400);
   };
 
-  return (
-    <div className="max-w-3xl space-y-6 text-gray-800">
+  const clearForm = () => {
+    setForm(emptyForm);
+    setErrors({});
+    setTouched({});
+  };
 
-      {/* ================= HEADER ================= */}
-      <div className="flex items-center gap-3">
+  /* ================= UI ================= */
+  return (
+    <div
+      className="
+        max-w-5xl space-y-8 animate-fadeIn
+        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
+        rounded-[32px] p-6 md:p-8
+        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
+      "
+    >
+      {/* HEADER */}
+      <div className="flex items-center gap-4">
         <button
           onClick={() => navigate("/admin/courses")}
-          className="p-2 rounded-full bg-white/60 hover:bg-white/80 shadow"
+          className="p-2 rounded-full bg-white/60 border border-white/50"
         >
           <FaArrowLeft />
         </button>
 
         <div>
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-2xl font-bold text-slate-800">
             {editId ? "Edit Course" : "Add New Course"}
           </h2>
-          <p className="text-sm text-gray-600">
-            {editId
-              ? "Update course details"
-              : "Create and configure a training course"}
+          <p className="text-sm text-slate-600">
+            Create and manage training programs
           </p>
         </div>
       </div>
 
-      {/* ================= FORM ================= */}
+      {/* FORM */}
       <GlassCard>
         <form onSubmit={handleSubmit} className="space-y-4">
 
           <Input
             label="Course Title"
             name="title"
+            placeholder="e.g. Full Stack Web Development"
             value={form.title}
             onChange={handleChange}
-            onBlur={() => setTouched({ ...touched, title: true })}
+            onBlur={() => setTouched((t) => ({ ...t, title: true }))}
             error={touched.title && errors.title}
-            placeholder="Full Stack Web Development"
           />
 
-          <Input
-            label="Category"
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-            onBlur={() => setTouched({ ...touched, category: true })}
-            error={touched.category && errors.category}
-            placeholder="IT, AI & ML, Cloud"
-          />
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              label="Category"
+              name="category"
+              placeholder="IT, AI & ML, Cloud, Testing"
+              value={form.category}
+              onChange={handleChange}
+              onBlur={() => setTouched((t) => ({ ...t, category: true }))}
+              error={touched.category && errors.category}
+            />
 
-          <Input
-            label="Duration"
-            name="duration"
-            value={form.duration}
-            onChange={handleChange}
-            onBlur={() => setTouched({ ...touched, duration: true })}
-            error={touched.duration && errors.duration}
-            placeholder="6 Months / 24 Weeks"
-          />
+            <Input
+              label="Duration"
+              name="duration"
+              placeholder="e.g. 6 Months / 24 Weeks"
+              value={form.duration}
+              onChange={handleChange}
+              onBlur={() => setTouched((t) => ({ ...t, duration: true }))}
+              error={touched.duration && errors.duration}
+            />
+          </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             <Select
@@ -193,7 +181,7 @@ export default function AddCourse() {
               name="level"
               value={form.level}
               onChange={handleChange}
-              onBlur={() => setTouched({ ...touched, level: true })}
+              onBlur={() => setTouched((t) => ({ ...t, level: true }))}
               error={touched.level && errors.level}
               options={["Beginner", "Intermediate", "Advanced"]}
             />
@@ -203,7 +191,7 @@ export default function AddCourse() {
               name="mode"
               value={form.mode}
               onChange={handleChange}
-              onBlur={() => setTouched({ ...touched, mode: true })}
+              onBlur={() => setTouched((t) => ({ ...t, mode: true }))}
               error={touched.mode && errors.mode}
               options={["Online", "Offline", "Hybrid"]}
             />
@@ -212,11 +200,11 @@ export default function AddCourse() {
           <Input
             label="Price (Optional)"
             name="price"
+            placeholder="e.g. 25000"
             value={form.price}
             onChange={handleChange}
-            onBlur={() => setTouched({ ...touched, price: true })}
+            onBlur={() => setTouched((t) => ({ ...t, price: true }))}
             error={touched.price && errors.price}
-            placeholder="e.g. 25000"
           />
 
           <div>
@@ -226,16 +214,22 @@ export default function AddCourse() {
               value={form.description}
               onChange={handleChange}
               rows="4"
-              className="w-full mt-1 p-3 rounded-xl bg-white/70 border"
-              placeholder="Course objectives, tools, outcomes..."
+              placeholder="Course objectives, tools covered, career outcomes..."
+              className="glass-input mt-1"
             />
           </div>
 
           {/* ACTIONS */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-wrap gap-4 pt-4">
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow"
+              className="
+                flex items-center gap-2 px-7 py-3 rounded-full
+                font-semibold text-white
+                bg-gradient-to-r from-purple-600 to-indigo-600
+                hover:from-purple-700 hover:to-indigo-700
+                shadow-lg transition
+              "
             >
               <FaSave />
               {editId ? "Update Course" : "Save Course"}
@@ -245,30 +239,43 @@ export default function AddCourse() {
               <button
                 type="button"
                 onClick={clearForm}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-gray-200 hover:bg-gray-300 font-semibold"
+                className="
+                  px-6 py-3 rounded-full
+                  bg-white/70 border border-white/50
+                  text-slate-700 flex items-center gap-2
+                "
               >
                 <FaEraser /> Clear
               </button>
             )}
           </div>
-
         </form>
       </GlassCard>
 
-      <Toast show={!!toast} message={toast} onClose={() => setToast("")} />
+      <Toast
+        show={toast.show}
+        message={toast.message}
+        onClose={() => setToast({ show: false, message: "" })}
+      />
     </div>
   );
 }
 
 /* ================= SHARED UI ================= */
 
+const GlassCard = ({ children }) => (
+  <div className="bg-white/40 backdrop-blur-[24px] border border-white/40 rounded-3xl p-6 shadow-[0_30px_90px_rgba(0,0,0,0.2)]">
+    {children}
+  </div>
+);
+
 const Input = ({ label, error, ...props }) => (
   <div>
     <label className="text-sm font-medium">{label}</label>
     <input
       {...props}
-      className={`w-full mt-1 p-3 rounded-xl bg-white/70 border ${
-        error ? "border-red-400" : ""
+      className={`glass-input mt-1 ${
+        error ? "border-red-400 focus:ring-red-400/40" : ""
       }`}
     />
     {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
@@ -280,8 +287,8 @@ const Select = ({ label, error, options, ...props }) => (
     <label className="text-sm font-medium">{label}</label>
     <select
       {...props}
-      className={`w-full mt-1 p-3 rounded-xl bg-white/70 border ${
-        error ? "border-red-400" : ""
+      className={`glass-input mt-1 ${
+        error ? "border-red-400 focus:ring-red-400/40" : ""
       }`}
     >
       <option value="">Select</option>
@@ -290,11 +297,5 @@ const Select = ({ label, error, options, ...props }) => (
       ))}
     </select>
     {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
-  </div>
-);
-
-const GlassCard = ({ children }) => (
-  <div className="bg-white/40 backdrop-blur-[24px] border border-white/40 rounded-3xl p-6 shadow-[0_30px_90px_rgba(0,0,0,0.2)]">
-    {children}
   </div>
 );

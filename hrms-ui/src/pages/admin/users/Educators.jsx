@@ -14,6 +14,8 @@ const emptyEducator = {
 const isValidEmail = (email) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+/* ================= COMPONENT ================= */
+
 export default function Educators() {
   const [educators, setEducators] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -23,7 +25,11 @@ export default function Educators() {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [confirmId, setConfirmId] = useState(null);
-  const [toast, setToast] = useState("");
+
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+  });
 
   /* ================= LOAD DATA ================= */
   useEffect(() => {
@@ -80,11 +86,7 @@ export default function Educators() {
     setErrors(validationErrors);
     setTouched({ name: true, email: true, course: true });
 
-    if (Object.keys(validationErrors).length > 0) {
-      setToast("❌ Please fix validation errors");
-      setTimeout(() => setToast(""), 2000);
-      return;
-    }
+    if (Object.keys(validationErrors).length > 0) return;
 
     const users = JSON.parse(localStorage.getItem("users")) || {
       admins: [],
@@ -98,10 +100,10 @@ export default function Educators() {
       updated = users.educators.map((e) =>
         e.id === form.id ? form : e
       );
-      setToast("✅ Educator updated successfully");
+      setToast({ show: true, message: "✅ Educator updated successfully" });
     } else {
       updated = [...users.educators, { ...form, id: Date.now() }];
-      setToast("✅ Educator added successfully");
+      setToast({ show: true, message: "✅ Educator added successfully" });
     }
 
     users.educators = updated;
@@ -110,7 +112,9 @@ export default function Educators() {
     setEducators(updated);
     resetForm();
 
-    setTimeout(() => setToast(""), 2500);
+    setTimeout(() => {
+      setToast({ show: false, message: "" });
+    }, 2500);
   };
 
   /* ================= EDIT ================= */
@@ -123,7 +127,11 @@ export default function Educators() {
 
   /* ================= DELETE ================= */
   const deleteEducator = () => {
-    const users = JSON.parse(localStorage.getItem("users"));
+    const users = JSON.parse(localStorage.getItem("users")) || {
+      admins: [],
+      educators: [],
+      students: [],
+    };
 
     const updated = users.educators.filter(
       (e) => e.id !== confirmId
@@ -134,9 +142,11 @@ export default function Educators() {
 
     setEducators(updated);
     setConfirmId(null);
-    setToast("🗑️ Educator deleted");
 
-    setTimeout(() => setToast(""), 2500);
+    setToast({ show: true, message: "🗑️ Educator deleted" });
+    setTimeout(() => {
+      setToast({ show: false, message: "" });
+    }, 2500);
   };
 
   const resetForm = () => {
@@ -146,39 +156,42 @@ export default function Educators() {
     setTouched({});
   };
 
+  /* ================= UI ================= */
   return (
-    <div className="max-w-5xl space-y-8 text-gray-800">
-
-      {/* ================= HEADER ================= */}
+    <div
+      className="
+        max-w-5xl space-y-8 animate-fadeIn
+        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
+        rounded-[32px] p-6 md:p-8
+        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
+      "
+    >
+      {/* HEADER */}
       <div>
-        <h2 className="text-2xl font-bold">Educators</h2>
-        <p className="text-sm text-gray-600">
+        <h2 className="text-2xl font-bold text-slate-800">
+          Educators
+        </h2>
+        <p className="text-sm text-slate-600">
           Manage educators and assign courses
         </p>
       </div>
 
-      {/* ================= FORM ================= */}
+      {/* FORM */}
       <GlassCard>
         <div className="grid md:grid-cols-3 gap-4">
-
           {/* NAME */}
           <div>
             <input
               placeholder="Educator Name"
               value={form.name}
-              onChange={(e) =>
-                setForm({ ...form, name: e.target.value })
-              }
-              onBlur={() =>
-                setTouched({ ...touched, name: true })
-              }
-              className={`p-3 w-full rounded-xl bg-white/70 border
-                ${errors.name && touched.name
-                  ? "border-red-400"
-                  : "border-gray-200"}`}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+                setTouched((t) => ({ ...t, name: true }));
+              }}
+              className="glass-input"
             />
             {errors.name && touched.name && (
-              <p className="text-xs text-red-600 mt-1">
+              <p className="mt-1 text-xs text-red-600">
                 {errors.name}
               </p>
             )}
@@ -189,19 +202,14 @@ export default function Educators() {
             <input
               placeholder="Email Address"
               value={form.email}
-              onChange={(e) =>
-                setForm({ ...form, email: e.target.value })
-              }
-              onBlur={() =>
-                setTouched({ ...touched, email: true })
-              }
-              className={`p-3 w-full rounded-xl bg-white/70 border
-                ${errors.email && touched.email
-                  ? "border-red-400"
-                  : "border-gray-200"}`}
+              onChange={(e) => {
+                setForm({ ...form, email: e.target.value });
+                setTouched((t) => ({ ...t, email: true }));
+              }}
+              className="glass-input"
             />
             {errors.email && touched.email && (
-              <p className="text-xs text-red-600 mt-1">
+              <p className="mt-1 text-xs text-red-600">
                 {errors.email}
               </p>
             )}
@@ -211,16 +219,11 @@ export default function Educators() {
           <div>
             <select
               value={form.course}
-              onChange={(e) =>
-                setForm({ ...form, course: e.target.value })
-              }
-              onBlur={() =>
-                setTouched({ ...touched, course: true })
-              }
-              className={`p-3 w-full rounded-xl bg-white/70 border
-                ${errors.course && touched.course
-                  ? "border-red-400"
-                  : "border-gray-200"}`}
+              onChange={(e) => {
+                setForm({ ...form, course: e.target.value });
+                setTouched((t) => ({ ...t, course: true }));
+              }}
+              className="glass-input"
             >
               <option value="">Assign Course</option>
               {courses.map((c) => (
@@ -230,21 +233,22 @@ export default function Educators() {
               ))}
             </select>
             {errors.course && touched.course && (
-              <p className="text-xs text-red-600 mt-1">
+              <p className="mt-1 text-xs text-red-600">
                 {errors.course}
               </p>
             )}
           </div>
         </div>
 
-        <div className="flex gap-3 mt-5">
+        <div className="flex flex-wrap gap-4 mt-6">
           <button
             onClick={saveEducator}
             className="
-              flex items-center gap-2
-              px-6 py-2.5 rounded-full
-              bg-purple-600 hover:bg-purple-700
-              text-white font-semibold shadow
+              flex items-center gap-2 px-7 py-3 rounded-full
+              font-semibold text-white
+              bg-gradient-to-r from-purple-600 to-indigo-600
+              hover:from-purple-700 hover:to-indigo-700
+              shadow-lg transition
             "
           >
             <FaPlus />
@@ -254,7 +258,11 @@ export default function Educators() {
           {editing && (
             <button
               onClick={resetForm}
-              className="px-5 py-2.5 rounded-full bg-gray-100 text-gray-700 flex items-center gap-2"
+              className="
+                px-6 py-3 rounded-full
+                bg-white/70 border border-white/50
+                text-slate-700 flex items-center gap-2
+              "
             >
               <FaTimes />
               Cancel
@@ -263,14 +271,18 @@ export default function Educators() {
         </div>
       </GlassCard>
 
-      {/* ================= LIST ================= */}
+      {/* LIST */}
       <div className="grid gap-4">
         {educators.map((e) => (
-          <GlassCard key={e.id}>
+          <GlassCard key={e.id} className="glass-hover">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-semibold">{e.name}</h3>
-                <p className="text-sm text-gray-600">{e.email}</p>
+                <h3 className="font-semibold text-slate-800">
+                  {e.name}
+                </h3>
+                <p className="text-sm text-slate-600">
+                  {e.email}
+                </p>
                 <span className="text-xs text-purple-700">
                   Course: {e.course}
                 </span>
@@ -279,14 +291,22 @@ export default function Educators() {
               <div className="flex gap-3">
                 <button
                   onClick={() => startEdit(e)}
-                  className="p-2 rounded-full bg-blue-100 text-blue-600"
+                  className="
+                    p-2.5 rounded-full
+                    bg-indigo-100 text-indigo-600
+                    hover:bg-indigo-200 transition
+                  "
                 >
                   <FaEdit />
                 </button>
 
                 <button
                   onClick={() => setConfirmId(e.id)}
-                  className="p-2 rounded-full bg-red-100 text-red-600"
+                  className="
+                    p-2.5 rounded-full
+                    bg-rose-100 text-rose-600
+                    hover:bg-rose-200 transition
+                  "
                 >
                   <FaTrash />
                 </button>
@@ -296,7 +316,7 @@ export default function Educators() {
         ))}
       </div>
 
-      {/* ================= CONFIRM DELETE ================= */}
+      {/* DELETE CONFIRM */}
       {confirmId && (
         <ConfirmModal
           onCancel={() => setConfirmId(null)}
@@ -304,48 +324,59 @@ export default function Educators() {
         />
       )}
 
-      <Toast show={!!toast} message={toast} onClose={() => setToast("")} />
+      <Toast
+        show={toast.show}
+        message={toast.message}
+        onClose={() => setToast({ show: false, message: "" })}
+      />
     </div>
   );
 }
 
-/* ================= CONFIRM MODAL ================= */
+/* ================= UI HELPERS ================= */
+
+const GlassCard = ({ children, className = "" }) => (
+  <div
+    className={`bg-white/40 backdrop-blur-[24px]
+      border border-white/40 rounded-3xl p-6
+      shadow-[0_30px_90px_rgba(0,0,0,0.2)]
+      ${className}`}
+  >
+    {children}
+  </div>
+);
 
 const ConfirmModal = ({ onCancel, onConfirm }) => (
-  <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-    <div className="bg-white rounded-2xl p-6 w-80 space-y-4 shadow-xl">
-      <h3 className="font-semibold text-lg">Delete Educator?</h3>
-      <p className="text-sm text-gray-600">
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+      onClick={onCancel}
+    />
+    <div className="relative glass-card w-80 animate-scaleIn">
+      <h3 className="font-semibold text-lg text-slate-800">
+        Delete Educator?
+      </h3>
+      <p className="text-sm text-slate-600 mt-1">
         This action cannot be undone.
       </p>
 
-      <div className="flex justify-end gap-3">
+      <div className="flex justify-end gap-3 mt-5">
         <button
           onClick={onCancel}
-          className="px-4 py-2 rounded-lg bg-gray-100"
+          className="px-4 py-2 rounded-lg
+          bg-white/60 border border-white/50"
         >
           Cancel
         </button>
         <button
           onClick={onConfirm}
-          className="px-4 py-2 rounded-lg bg-red-600 text-white"
+          className="px-4 py-2 rounded-lg
+          bg-red-600 hover:bg-red-700
+          text-white font-semibold"
         >
           Delete
         </button>
       </div>
     </div>
-  </div>
-);
-
-/* ================= GLASS CARD ================= */
-
-const GlassCard = ({ children }) => (
-  <div className="
-    bg-white/40 backdrop-blur-[24px]
-    border border-white/40
-    rounded-3xl p-6
-    shadow-[0_30px_90px_rgba(0,0,0,0.2)]
-  ">
-    {children}
   </div>
 );

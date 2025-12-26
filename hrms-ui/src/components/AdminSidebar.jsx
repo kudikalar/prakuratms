@@ -17,11 +17,13 @@ import {
   FaBars,
   FaSearch,
   FaTimes,
+  FaLifeRing,
 } from "react-icons/fa";
 
 import PrakuraLogo from "../assets/prakura-logo.png";
 
 /* ================= ROLE ACCESS ================= */
+
 const ROLE_ACCESS = {
   Admin: [
     "Dashboard",
@@ -37,12 +39,16 @@ const ROLE_ACCESS = {
     "Reports",
     "Settings",
     "Security & Audit",
+    "Help & Support",
   ],
-  Finance: ["Dashboard", "Payments", "Finance", "Reports"],
-  Counsellor: ["Dashboard", "Payments"],
+  Finance: ["Dashboard", "Payments", "Finance", "Reports", "Help & Support"],
+  Counsellor: ["Dashboard", "Payments", "Help & Support"],
+  Educator: ["Dashboard", "Assessments", "Attendance", "Help & Support"],
+  Student: ["Dashboard", "Assessments", "Payments", "Help & Support"],
 };
 
-/* ================= MENU CONFIG ================= */
+/* ================= MENU ================= */
+
 const MENU = [
   {
     title: "Dashboard",
@@ -86,14 +92,14 @@ const MENU = [
   {
     title: "Attendance Analytics",
     icon: <FaChartPie />,
-    items: [{ label: "Student Attendance Summary", path: "attendance/analytics" }],
+    items: [{ label: "Summary", path: "attendance/analytics" }],
   },
   {
     title: "Assessments",
     icon: <FaClipboardList />,
     items: [
       { label: "Dashboard", path: "assessments" },
-      { label: "Create Assessment", path: "assessments/create" },
+      { label: "Create", path: "assessments/create" },
       { label: "Question Bank", path: "assessments/questions" },
       { label: "Evaluation", path: "assessments/evaluation" },
       { label: "Results", path: "assessments/results" },
@@ -108,31 +114,35 @@ const MENU = [
     title: "Finance",
     icon: <FaChartBar />,
     items: [
-      { label: "Payment Analytics", path: "finance/analytics" },
+      { label: "Analytics", path: "finance/analytics" },
       { label: "Overdue Alerts", path: "finance/alerts" },
     ],
   },
   {
     title: "Notifications",
     icon: <FaBell />,
-    items: [{ label: "Announcements", path: "announcements" }],
-  },
-  {
-    title: "Reports",
-    icon: <FaChartBar />,
-    items: [{ label: "Reports", path: "reports" }],
-  },
-  {
-    title: "Settings",
-    icon: <FaCog />,
-    items: [{ label: "Institute Profile", path: "settings/institute" }],
+    items: [{ label: "Announcements", path: "notifications/announcements" }],
   },
   {
     title: "Security & Audit",
     icon: <FaShieldAlt />,
-    items: [{ label: "Activity Logs", path: "security/activity-logs" }],
+    items: [
+      { label: "Activity Logs", path: "security/activity-logs" },
+      { label: "Security Audit", path: "security/audit" },
+    ],
+  },
+  {
+    title: "Help & Support",
+    icon: <FaLifeRing />,
+    items: [
+      { label: "FAQs", path: "support/faqs" },
+      { label: "Support Tickets", path: "support/tickets" },
+      { label: "Contact Admin", path: "support/contact" },
+    ],
   },
 ];
+
+/* ================= SIDEBAR ================= */
 
 export default function AdminSidebar() {
   const location = useLocation();
@@ -146,55 +156,59 @@ export default function AdminSidebar() {
   }, []);
 
   const role = user?.role || "Admin";
-  const allowedMenus = ROLE_ACCESS[role] ?? [];
+  const allowedMenus = ROLE_ACCESS[role] || [];
 
-  const [open, setOpen] = useState(null);
+  const [openMenu, setOpenMenu] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [search, setSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const storedLogo = localStorage.getItem("instituteLogo");
-  const logo =
-    storedLogo && storedLogo !== "null" && storedLogo !== ""
-      ? storedLogo
-      : PrakuraLogo;
-
-  /* MOBILE OPEN LISTENER */
+  /* ===== 🔥 FIX: GLOBAL EVENT LISTENER ===== */
   useEffect(() => {
-    const openSidebar = () => setMobileOpen(true);
-    window.addEventListener("OPEN_ADMIN_SIDEBAR", openSidebar);
-    return () =>
-      window.removeEventListener("OPEN_ADMIN_SIDEBAR", openSidebar);
+    const handler = () => {
+      setMobileOpen(true);
+      document.body.style.overflow = "hidden";
+    };
+
+    window.addEventListener("OPEN_ADMIN_SIDEBAR", handler);
+    return () => window.removeEventListener("OPEN_ADMIN_SIDEBAR", handler);
   }, []);
 
+  /* ===== AUTO CLOSE ON ROUTE CHANGE ===== */
   useEffect(() => {
-    const active = MENU.find((menu) =>
-      menu.items.some((i) => location.pathname.endsWith(i.path))
-    );
-    if (active) setOpen(active.title);
+    setMobileOpen(false);
+    document.body.style.overflow = "";
   }, [location.pathname]);
 
-  const filteredMenu = useMemo(() => {
-    return MENU.filter((m) => allowedMenus.includes(m.title))
-      .map((m) => {
-        const visibleItems = m.items.filter((i) =>
-          i.label.toLowerCase().includes(search.toLowerCase())
-        );
-        return {
-          ...m,
-          items: search ? visibleItems : m.items,
-          visible: !search || visibleItems.length > 0,
-        };
-      })
-      .filter((m) => m.visible);
-  }, [search, allowedMenus]);
+  /* ===== ACTIVE MENU ===== */
+  useEffect(() => {
+    const active = MENU.find((m) =>
+      m.items.some((i) => location.pathname.includes(i.path))
+    );
+    if (active) setOpenMenu(active.title);
+  }, [location.pathname]);
+
+  const filteredMenu = MENU.filter((m) =>
+    allowedMenus.includes(m.title)
+  ).map((m) => {
+    const items = m.items.filter(
+      (i) =>
+        i.label.toLowerCase().includes(search.toLowerCase()) ||
+        m.title.toLowerCase().includes(search.toLowerCase())
+    );
+    return { ...m, items };
+  });
 
   return (
     <>
+      {/* MOBILE OVERLAY */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/40 z-30 md:hidden"
-          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => {
+            setMobileOpen(false);
+            document.body.style.overflow = "";
+          }}
         />
       )}
 
@@ -202,30 +216,30 @@ export default function AdminSidebar() {
         className={`
           fixed md:static z-50
           h-full md:h-screen
-          bg-gradient-to-br
-          from-slate-200
-          via-slate-300/80
-          to-slate-400/60
-          backdrop-blur-xl
-          border-r border-white/40
+          bg-gradient-to-br from-blue-800 via-blue-900 to-indigo-900
+          border-r border-white/20
           transition-transform duration-300
           ${collapsed ? "w-20" : "w-72"}
           ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
         {/* HEADER */}
-        <div className="px-4 py-4 flex justify-between items-center border-b border-white/40">
+        <div className="px-4 py-4 flex justify-between items-center border-b border-white/20">
           <div className="flex items-center gap-3">
-            <img src={logo} className="w-8 h-8" />
+            <img src={PrakuraLogo} className="w-8 h-8" />
             {!collapsed && (
-              <span className="font-semibold text-slate-800">
-                PRAKURA TMS
-              </span>
+              <span className="text-white font-semibold">PRAKURA TMS</span>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <button className="md:hidden" onClick={() => setMobileOpen(false)}>
+          <div className="flex gap-2 text-white">
+            <button
+              className="md:hidden"
+              onClick={() => {
+                setMobileOpen(false);
+                document.body.style.overflow = "";
+              }}
+            >
               <FaTimes />
             </button>
             <button
@@ -240,55 +254,50 @@ export default function AdminSidebar() {
         {/* SEARCH */}
         {!collapsed && (
           <div className="p-3">
-            <div className="relative">
-              <FaSearch className="absolute left-3 top-3 text-slate-400" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search menu..."
-                className="pl-9 w-full py-2 rounded-lg bg-white/60 backdrop-blur border border-white/50 text-sm"
-              />
-            </div>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="w-full px-3 py-2 rounded-lg bg-white/10 text-white placeholder-white/60"
+            />
           </div>
         )}
 
         {/* MENU */}
-        <nav className="px-2 space-y-1 text-sm overflow-y-auto pb-6">
+        <nav className="px-2 space-y-1 text-white text-sm overflow-y-auto">
           {filteredMenu.map((menu) => (
             <div key={menu.title}>
               <div
+                className="flex justify-between items-center px-3 py-2 rounded-lg cursor-pointer hover:bg-white/10"
                 onClick={() =>
                   !collapsed &&
-                  setOpen(open === menu.title ? null : menu.title)
+                  setOpenMenu(openMenu === menu.title ? null : menu.title)
                 }
-                className="flex justify-between items-center px-3 py-2 rounded-lg cursor-pointer hover:bg-white/50"
               >
-                <div className="flex gap-3 items-center">
-                  <span className="text-purple-600">{menu.icon}</span>
+                <div className="flex items-center gap-3">
+                  {menu.icon}
                   {!collapsed && menu.title}
                 </div>
-
                 {!collapsed && menu.items.length > 1 && (
                   <FaChevronDown
                     className={`transition ${
-                      open === menu.title ? "rotate-180" : ""
+                      openMenu === menu.title ? "rotate-180" : ""
                     }`}
                   />
                 )}
               </div>
 
-              {!collapsed && open === menu.title && (
-                <div className="ml-9 mt-1 space-y-1">
+              {!collapsed && openMenu === menu.title && (
+                <div className="ml-8 space-y-1">
                   {menu.items.map((item) => (
                     <NavLink
                       key={item.path}
                       to={item.path}
-                      onClick={() => setMobileOpen(false)}
                       className={({ isActive }) =>
-                        `block px-3 py-1.5 rounded-md transition ${
+                        `block px-3 py-1.5 rounded-md ${
                           isActive
-                            ? "bg-purple-200/60 text-purple-800 font-medium"
-                            : "hover:bg-white/50 hover:text-purple-600"
+                            ? "bg-white/20 font-medium"
+                            : "hover:bg-white/10"
                         }`
                       }
                     >
