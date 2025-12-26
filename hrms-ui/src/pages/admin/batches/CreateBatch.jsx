@@ -24,7 +24,7 @@ export default function CreateBatch() {
 
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState({ show: false, message: "" });
 
   /* ================= LOAD COURSES ================= */
   useEffect(() => {
@@ -64,17 +64,9 @@ export default function CreateBatch() {
       if (exists) e.name = "Batch name already exists";
     }
 
-    if (!data.course) {
-      e.course = "Please select a course";
-    }
-
-    if (!data.startDate) {
-      e.startDate = "Start date is required";
-    }
-
-    if (!data.endDate) {
-      e.endDate = "End date is required";
-    }
+    if (!data.course) e.course = "Please select a course";
+    if (!data.startDate) e.startDate = "Start date is required";
+    if (!data.endDate) e.endDate = "End date is required";
 
     if (data.startDate && data.endDate) {
       if (new Date(data.startDate) > new Date(data.endDate)) {
@@ -92,10 +84,8 @@ export default function CreateBatch() {
   /* ================= HANDLERS ================= */
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     let updated = { ...form, [name]: value };
 
-    // Auto status based on dates
     if (name === "startDate" || name === "endDate") {
       const today = new Date().setHours(0, 0, 0, 0);
       const start = new Date(updated.startDate).setHours(0, 0, 0, 0);
@@ -131,7 +121,7 @@ export default function CreateBatch() {
     });
 
     if (Object.keys(validationErrors).length > 0) {
-      setToast("❌ Please fix validation errors");
+      setToast({ show: true, message: "❌ Please fix validation errors" });
       return;
     }
 
@@ -145,41 +135,48 @@ export default function CreateBatch() {
           : b
       );
       localStorage.setItem("batches", JSON.stringify(updated));
-      setToast("✅ Batch updated successfully");
+      setToast({ show: true, message: "✅ Batch updated successfully" });
     } else {
       localStorage.setItem(
         "batches",
         JSON.stringify([...batches, { ...form, id: Date.now() }])
       );
-      setToast("🎉 Batch created successfully");
+      setToast({ show: true, message: "🎉 Batch created successfully" });
     }
 
     setTimeout(() => navigate("/admin/batches"), 1500);
   };
 
+  /* ================= UI ================= */
   return (
-    <div className="max-w-3xl space-y-6 text-gray-800">
-
-      {/* ================= HEADER ================= */}
-      <div className="flex items-center gap-3">
+    <div
+      className="
+        max-w-5xl mx-auto space-y-8 animate-fadeIn
+        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
+        rounded-[32px] p-6 md:p-8
+        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
+      "
+    >
+      {/* HEADER */}
+      <div className="flex items-center gap-4">
         <button
           onClick={() => navigate("/admin/batches")}
-          className="p-2 rounded-full bg-white/60 hover:bg-white/80 shadow"
+          className="p-2 rounded-full bg-white/60 border border-white/50"
         >
           <FaArrowLeft />
         </button>
 
         <div>
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-2xl font-bold text-slate-800">
             {editId ? "Edit Batch" : "Create Batch"}
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-slate-600">
             Batch scheduling and configuration
           </p>
         </div>
       </div>
 
-      {/* ================= FORM ================= */}
+      {/* FORM */}
       <GlassCard>
         <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -188,18 +185,17 @@ export default function CreateBatch() {
             name="name"
             value={form.name}
             onChange={handleChange}
-            onBlur={() => setTouched({ ...touched, name: true })}
+            onBlur={() => setTouched((t) => ({ ...t, name: true }))}
             error={touched.name && errors.name}
             placeholder="FSD-2025-Morning"
           />
 
-          {/* COURSE */}
           <Select
             label="Course"
             name="course"
             value={form.course}
             onChange={handleChange}
-            onBlur={() => setTouched({ ...touched, course: true })}
+            onBlur={() => setTouched((t) => ({ ...t, course: true }))}
             error={touched.course && errors.course}
             options={courses.map((c) => c.title)}
           />
@@ -212,7 +208,7 @@ export default function CreateBatch() {
               value={form.startDate}
               onChange={handleChange}
               onBlur={() =>
-                setTouched({ ...touched, startDate: true })
+                setTouched((t) => ({ ...t, startDate: true }))
               }
               error={touched.startDate && errors.startDate}
             />
@@ -224,13 +220,12 @@ export default function CreateBatch() {
               value={form.endDate}
               onChange={handleChange}
               onBlur={() =>
-                setTouched({ ...touched, endDate: true })
+                setTouched((t) => ({ ...t, endDate: true }))
               }
               error={touched.endDate && errors.endDate}
             />
           </div>
 
-          {/* STATUS */}
           <Select
             label="Batch Status"
             name="status"
@@ -239,7 +234,6 @@ export default function CreateBatch() {
             options={["Upcoming", "Ongoing", "Completed"]}
           />
 
-          {/* NOTES */}
           <div>
             <label className="text-sm font-medium">Notes / Remarks</label>
             <textarea
@@ -247,16 +241,22 @@ export default function CreateBatch() {
               value={form.notes}
               onChange={handleChange}
               rows="3"
-              className="w-full mt-1 p-3 rounded-xl bg-white/70 border"
               placeholder="Optional notes for batch planning..."
+              className="glass-input mt-1"
             />
           </div>
 
           {/* ACTIONS */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-wrap gap-4 pt-4">
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow"
+              className="
+                flex items-center gap-2 px-7 py-3 rounded-full
+                font-semibold text-white
+                bg-gradient-to-r from-purple-600 to-indigo-600
+                hover:from-purple-700 hover:to-indigo-700
+                shadow-lg transition
+              "
             >
               <FaSave />
               {editId ? "Update Batch" : "Save Batch"}
@@ -266,7 +266,11 @@ export default function CreateBatch() {
               <button
                 type="button"
                 onClick={clearForm}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-gray-200 hover:bg-gray-300 font-semibold"
+                className="
+                  px-6 py-3 rounded-full
+                  bg-white/70 border border-white/50
+                  text-slate-700 flex items-center gap-2
+                "
               >
                 <FaEraser /> Clear
               </button>
@@ -276,25 +280,33 @@ export default function CreateBatch() {
         </form>
       </GlassCard>
 
-      <Toast show={!!toast} message={toast} onClose={() => setToast("")} />
+      <Toast
+        show={toast.show}
+        message={toast.message}
+        onClose={() => setToast({ show: false, message: "" })}
+      />
     </div>
   );
 }
 
 /* ================= SHARED UI ================= */
 
+const GlassCard = ({ children }) => (
+  <div className="bg-white/40 backdrop-blur-[24px] border border-white/40 rounded-3xl p-6 shadow-[0_30px_90px_rgba(0,0,0,0.2)]">
+    {children}
+  </div>
+);
+
 const Input = ({ label, error, ...props }) => (
   <div>
     <label className="text-sm font-medium">{label}</label>
     <input
       {...props}
-      className={`w-full mt-1 p-3 rounded-xl bg-white/70 border ${
-        error ? "border-red-400" : ""
+      className={`glass-input mt-1 ${
+        error ? "border-red-400 focus:ring-red-400/40" : ""
       }`}
     />
-    {error && (
-      <p className="text-xs text-red-600 mt-1">{error}</p>
-    )}
+    {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
   </div>
 );
 
@@ -303,8 +315,8 @@ const Select = ({ label, error, options, ...props }) => (
     <label className="text-sm font-medium">{label}</label>
     <select
       {...props}
-      className={`w-full mt-1 p-3 rounded-xl bg-white/70 border ${
-        error ? "border-red-400" : ""
+      className={`glass-input mt-1 ${
+        error ? "border-red-400 focus:ring-red-400/40" : ""
       }`}
     >
       <option value="">Select</option>
@@ -312,19 +324,6 @@ const Select = ({ label, error, options, ...props }) => (
         <option key={o} value={o}>{o}</option>
       ))}
     </select>
-    {error && (
-      <p className="text-xs text-red-600 mt-1">{error}</p>
-    )}
-  </div>
-);
-
-const GlassCard = ({ children }) => (
-  <div className="
-    bg-white/40 backdrop-blur-[24px]
-    border border-white/40
-    rounded-3xl p-6
-    shadow-[0_30px_90px_rgba(0,0,0,0.2)]
-  ">
-    {children}
+    {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
   </div>
 );

@@ -14,10 +14,35 @@ const getStatus = (percentage) => {
   return "Poor";
 };
 
+const getCourseNameFromBatch = (batchId, batches, courses) => {
+  const batch = batches.find(b => String(b.id) === String(batchId));
+  if (!batch) return "—";
+
+  if (batch.courseId) {
+    return (
+      courses.find(c => String(c.id) === String(batch.courseId))?.title || "—"
+    );
+  }
+
+  if (typeof batch.course === "string") return batch.course;
+  if (batch.course?.title) return batch.course.title;
+
+  return "—";
+};
+
+const getYearFromStudentOrBatch = (student, batch) => {
+  if (student.year) return student.year;
+  if (batch?.startDate) return new Date(batch.startDate).getFullYear();
+  return "—";
+};
+
+/* ================= COMPONENT ================= */
+
 export default function StudentAnalytics() {
   const [students, setStudents] = useState([]);
   const [attendanceStore, setAttendanceStore] = useState({});
   const [batches, setBatches] = useState([]);
+  const [coursesMaster, setCoursesMaster] = useState([]);
 
   /* FILTER STATE */
   const [search, setSearch] = useState("");
@@ -35,10 +60,8 @@ export default function StudentAnalytics() {
     );
 
     setBatches(JSON.parse(localStorage.getItem("batches")) || []);
+    setCoursesMaster(JSON.parse(localStorage.getItem("courses")) || []);
   }, []);
-
-  const getBatchName = (id) =>
-    batches.find((b) => String(b.id) === String(id))?.name || "—";
 
   /* ================= PROCESS ATTENDANCE ================= */
   const processedData = useMemo(() => {
@@ -51,21 +74,34 @@ export default function StudentAnalytics() {
           const batchAttendance = dayObj?.[student.batchId];
           if (batchAttendance && batchAttendance[student.id]) {
             totalDays++;
-            if (batchAttendance[student.id] === "Present") {
-              present++;
-            }
+            if (batchAttendance[student.id] === "Present") present++;
           }
         });
 
         const absent = totalDays - present;
         const percentage =
-          totalDays > 0
-            ? Math.round((present / totalDays) * 100)
-            : 0;
+          totalDays > 0 ? Math.round((present / totalDays) * 100) : 0;
+
+        const batchObj = batches.find(
+          (b) => String(b.id) === String(student.batchId)
+        );
+
+        const derivedCourse = getCourseNameFromBatch(
+          student.batchId,
+          batches,
+          coursesMaster
+        );
+
+        const derivedYear = getYearFromStudentOrBatch(
+          student,
+          batchObj
+        );
 
         return {
           ...student,
-          batch: getBatchName(student.batchId),
+          batch: batchObj?.name || "—",
+          course: derivedCourse,
+          year: derivedYear,
           totalDays,
           present,
           absent,
@@ -78,15 +114,35 @@ export default function StudentAnalytics() {
           s.name.toLowerCase().includes(search.toLowerCase()) &&
           (course === "All" || s.course === course) &&
           (batch === "All" || s.batch === batch) &&
-          (year === "All" || s.year === year)
+          (year === "All" || String(s.year) === String(year))
         );
       });
-  }, [students, attendanceStore, search, course, batch, year]);
+  }, [
+    students,
+    attendanceStore,
+    batches,
+    coursesMaster,
+    search,
+    course,
+    batch,
+    year,
+  ]);
 
   /* ================= FILTER OPTIONS ================= */
-  const courses = ["All", ...new Set(students.map((s) => s.course))];
-  const batchesList = ["All", ...new Set(processedData.map((s) => s.batch))];
-  const years = ["All", ...new Set(students.map((s) => s.year))];
+  const courseOptions = useMemo(
+    () => ["All", ...new Set(processedData.map(s => s.course).filter(Boolean))],
+    [processedData]
+  );
+
+  const batchOptions = useMemo(
+    () => ["All", ...new Set(processedData.map(s => s.batch).filter(Boolean))],
+    [processedData]
+  );
+
+  const yearOptions = useMemo(
+    () => ["All", ...new Set(processedData.map(s => s.year).filter(Boolean))],
+    [processedData]
+  );
 
   /* ================= SUMMARY ================= */
   const summary = useMemo(() => {
@@ -105,33 +161,44 @@ export default function StudentAnalytics() {
   }, [processedData]);
 
   return (
-    <div className="p-4 md:p-6 space-y-6 text-gray-800">
-
+    <div
+      className="
+        max-w-7xl mx-auto space-y-8 pb-24 animate-fadeIn
+        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
+        rounded-[32px] p-6 md:p-8
+        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
+      "
+    >
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <h1 className="text-xl md:text-2xl font-bold">
-          Student Attendance Analytics
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">
+            Student Attendance Analytics
+          </h1>
+          <p className="text-sm text-slate-600">
+            Course • Batch • Year wise attendance insights
+          </p>
+        </div>
 
         <input
           placeholder="Search student..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-4 py-2 rounded-xl bg-white/60 border w-full md:w-72"
+          className="glass-input w-full md:w-72"
         />
       </div>
 
       {/* FILTERS */}
-      <div className="bg-white/40 p-4 rounded-2xl shadow">
-        <div className="flex items-center gap-2 mb-3">
+      <GlassCard>
+        <div className="flex items-center gap-2 mb-4">
           <FaFilter className="text-purple-600" />
-          <span className="font-semibold">Filters</span>
+          <span className="font-semibold text-slate-700">Filters</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <Select label="Course" value={course} onChange={setCourse} options={courses} />
-          <Select label="Batch" value={batch} onChange={setBatch} options={batchesList} />
-          <Select label="Year" value={year} onChange={setYear} options={years} />
+          <Select label="Course" value={course} onChange={setCourse} options={courseOptions} />
+          <Select label="Batch" value={batch} onChange={setBatch} options={batchOptions} />
+          <Select label="Year" value={year} onChange={setYear} options={yearOptions} />
 
           <button
             onClick={() => {
@@ -140,12 +207,17 @@ export default function StudentAnalytics() {
               setBatch("All");
               setYear("All");
             }}
-            className="px-4 py-2 rounded-xl bg-purple-600 text-white w-full"
+            className="
+              px-4 py-2 rounded-xl
+              bg-gradient-to-r from-purple-600 to-indigo-600
+              text-white font-semibold
+              hover:from-purple-700 hover:to-indigo-700
+            "
           >
             Reset
           </button>
         </div>
-      </div>
+      </GlassCard>
 
       {/* SUMMARY */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -154,60 +226,33 @@ export default function StudentAnalytics() {
         <SummaryCard icon={<FaCheckCircle />} label="Regular Students" value={summary.regularStudents} />
       </div>
 
-      {/* ================= MOBILE VIEW (ADDED) ================= */}
-      <div className="md:hidden space-y-3">
-        {processedData.map((s) => (
-          <div key={s.id} className="bg-white/50 p-4 rounded-xl shadow">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold">{s.name}</h3>
-              <StatusBadge status={s.status} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><span className="font-medium">Course:</span> {s.course}</div>
-              <div><span className="font-medium">Batch:</span> {s.batch}</div>
-              <div><span className="font-medium">Year:</span> {s.year}</div>
-              <div><span className="font-medium">Attendance:</span> {s.percentage}%</div>
-              <div className="text-green-700">Present: {s.present}</div>
-              <div className="text-red-600">Absent: {s.absent}</div>
-            </div>
-          </div>
-        ))}
-
-        {processedData.length === 0 && (
-          <div className="text-center text-gray-500 py-6">
-            No attendance data available
-          </div>
-        )}
-      </div>
-
-      {/* ================= DESKTOP TABLE (UNCHANGED) ================= */}
-      <div className="hidden md:block bg-white/40 rounded-2xl shadow overflow-hidden">
+      {/* TABLE */}
+      <GlassCard>
         <table className="w-full text-sm">
-          <thead className="bg-white/50">
+          <thead className="border-b text-slate-600">
             <tr>
-              <th className="px-4 py-3 text-left">Student</th>
-              <th className="px-4 py-3">Course</th>
-              <th className="px-4 py-3">Batch</th>
-              <th className="px-4 py-3">Year</th>
-              <th className="px-4 py-3">Present</th>
-              <th className="px-4 py-3">Absent</th>
-              <th className="px-4 py-3">%</th>
-              <th className="px-4 py-3">Status</th>
+              <th className="text-left py-3">Student</th>
+              <th>Course</th>
+              <th>Batch</th>
+              <th>Year</th>
+              <th>Present</th>
+              <th>Absent</th>
+              <th>%</th>
+              <th>Status</th>
             </tr>
           </thead>
 
           <tbody>
             {processedData.map((s) => (
-              <tr key={s.id} className="border-t">
-                <td className="px-4 py-3 font-medium">{s.name}</td>
-                <td className="px-4 py-3 text-center">{s.course}</td>
-                <td className="px-4 py-3 text-center">{s.batch}</td>
-                <td className="px-4 py-3 text-center">{s.year}</td>
-                <td className="px-4 py-3 text-center text-green-700">{s.present}</td>
-                <td className="px-4 py-3 text-center text-red-600">{s.absent}</td>
-                <td className="px-4 py-3 text-center font-semibold">{s.percentage}%</td>
-                <td className="px-4 py-3 text-center">
+              <tr key={s.id} className="border-b last:border-0">
+                <td className="py-3 font-medium">{s.name}</td>
+                <td className="text-center">{s.course}</td>
+                <td className="text-center">{s.batch}</td>
+                <td className="text-center">{s.year}</td>
+                <td className="text-center text-green-700">{s.present}</td>
+                <td className="text-center text-red-600">{s.absent}</td>
+                <td className="text-center font-semibold">{s.percentage}%</td>
+                <td className="text-center">
                   <StatusBadge status={s.status} />
                 </td>
               </tr>
@@ -215,15 +260,14 @@ export default function StudentAnalytics() {
 
             {processedData.length === 0 && (
               <tr>
-                <td colSpan="8" className="py-6 text-center text-gray-500">
+                <td colSpan="8" className="py-8 text-center text-slate-500">
                   No attendance data available
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-      </div>
-
+      </GlassCard>
     </div>
   );
 }
@@ -233,11 +277,11 @@ export default function StudentAnalytics() {
 function Select({ label, value, onChange, options }) {
   return (
     <div>
-      <label className="text-xs font-semibold text-gray-600">{label}</label>
+      <label className="text-xs font-semibold text-slate-600">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 rounded-xl bg-white/60"
+        className="glass-input mt-1"
       >
         {options.map((o) => (
           <option key={o}>{o}</option>
@@ -249,13 +293,13 @@ function Select({ label, value, onChange, options }) {
 
 function SummaryCard({ icon, label, value }) {
   return (
-    <div className="bg-white/40 p-5 rounded-2xl shadow">
+    <GlassCard>
       <div className="flex items-center gap-3 text-purple-600">
         {icon}
-        <span className="text-sm text-gray-600">{label}</span>
+        <span className="text-sm text-slate-600">{label}</span>
       </div>
       <h2 className="text-2xl font-bold mt-2">{value}</h2>
-    </div>
+    </GlassCard>
   );
 }
 
@@ -272,5 +316,13 @@ function StatusBadge({ status }) {
     >
       {status}
     </span>
+  );
+}
+
+function GlassCard({ children }) {
+  return (
+    <div className="bg-white/40 backdrop-blur-xl border border-white/40 rounded-3xl p-6 shadow">
+      {children}
+    </div>
   );
 }

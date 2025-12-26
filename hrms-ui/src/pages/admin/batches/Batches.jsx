@@ -17,7 +17,17 @@ const getBatchStatus = (startDate, endDate) => {
   return "Ongoing";
 };
 
+const statusColor = {
+  Upcoming: "bg-yellow-100 text-yellow-700",
+  Ongoing: "bg-blue-100 text-blue-700",
+  Completed: "bg-green-100 text-green-700",
+};
+
+/* ================= MAIN ================= */
+
 export default function Batches() {
+  const navigate = useNavigate();
+
   const [batches, setBatches] = useState([]);
   const [toast, setToast] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -25,8 +35,7 @@ export default function Batches() {
 
   const [search, setSearch] = useState("");
   const [courseFilter, setCourseFilter] = useState("All");
-
-  const navigate = useNavigate();
+  const [sort, setSort] = useState("new");
 
   /* ================= LOAD ================= */
   useEffect(() => {
@@ -48,52 +57,69 @@ export default function Batches() {
     setTimeout(() => setToast(""), 2000);
   };
 
-  /* ================= FILTER ================= */
+  /* ================= FILTER + SORT ================= */
   const filteredBatches = useMemo(() => {
-    return batches.filter((b) => {
-      const matchName = b.name
-        .toLowerCase()
-        .includes(search.toLowerCase());
+    return batches
+      .filter((b) => {
+        const matchName = b.name
+          ?.toLowerCase()
+          .includes(search.toLowerCase());
+        const matchCourse =
+          courseFilter === "All" || b.course === courseFilter;
+        return matchName && matchCourse;
+      })
+      .sort((a, b) =>
+        sort === "new"
+          ? new Date(b.startDate) - new Date(a.startDate)
+          : new Date(a.startDate) - new Date(b.startDate)
+      );
+  }, [batches, search, courseFilter, sort]);
 
-      const matchCourse =
-        courseFilter === "All" || b.course === courseFilter;
+  /* ================= GROUP ================= */
+  const grouped = {
+    Upcoming: filteredBatches.filter(
+      (b) => getBatchStatus(b.startDate, b.endDate) === "Upcoming"
+    ),
+    Ongoing: filteredBatches.filter(
+      (b) => getBatchStatus(b.startDate, b.endDate) === "Ongoing"
+    ),
+    Completed: filteredBatches.filter(
+      (b) => getBatchStatus(b.startDate, b.endDate) === "Completed"
+    ),
+  };
 
-      return matchName && matchCourse;
-    });
-  }, [batches, search, courseFilter]);
-
-  /* ================= CATEGORIZED ================= */
-  const upcoming = filteredBatches.filter(
-    (b) => getBatchStatus(b.startDate, b.endDate) === "Upcoming"
-  );
-  const ongoing = filteredBatches.filter(
-    (b) => getBatchStatus(b.startDate, b.endDate) === "Ongoing"
-  );
-  const completed = filteredBatches.filter(
-    (b) => getBatchStatus(b.startDate, b.endDate) === "Completed"
-  );
-
-  const uniqueCourses = [
-    "All",
-    ...new Set(batches.map((b) => b.course)),
-  ];
+  const uniqueCourses = ["All", ...new Set(batches.map((b) => b.course))];
 
   return (
-    <div className="space-y-8 text-gray-800">
+    <div
+      className="
+        max-w-6xl mx-auto space-y-10 animate-fadeIn
+        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
+        rounded-[32px] p-6 md:p-8
+        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
+      "
+    >
 
       {/* ================= HEADER ================= */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Batches</h2>
-          <p className="text-sm text-gray-600">
-            Side-by-side categorized batches
+          <h2 className="text-2xl font-bold text-slate-800">
+            Batches
+          </h2>
+          <p className="text-sm text-slate-600">
+            Manage & track training batches
           </p>
         </div>
 
         <NavLink
           to="/admin/batches/create"
-          className="flex items-center gap-2 px-5 py-2.5
-            rounded-full bg-purple-600 text-white font-semibold shadow"
+          className="
+            flex items-center gap-2 px-7 py-3 rounded-full
+            font-semibold text-white
+            bg-gradient-to-r from-purple-600 to-indigo-600
+            hover:from-purple-700 hover:to-indigo-700
+            shadow-lg transition
+          "
         >
           <FaPlus /> Create Batch
         </NavLink>
@@ -101,65 +127,56 @@ export default function Batches() {
 
       {/* ================= FILTER BAR ================= */}
       <GlassCard>
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-4 gap-4">
           <input
-            placeholder="Search batch by name..."
+            placeholder="Search batch name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="p-3 rounded-xl bg-white/70 border"
+            className="glass-input"
           />
 
           <select
             value={courseFilter}
             onChange={(e) => setCourseFilter(e.target.value)}
-            className="p-3 rounded-xl bg-white/70 border"
+            className="glass-input"
           >
             {uniqueCourses.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
+              <option key={c}>{c}</option>
             ))}
           </select>
+
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            className="glass-input"
+          >
+            <option value="new">Newest First</option>
+            <option value="old">Oldest First</option>
+          </select>
+
+          <div className="flex items-center text-sm text-slate-600">
+            Total: {filteredBatches.length}
+          </div>
         </div>
       </GlassCard>
 
-      {/* ================= SIDE BY SIDE COLUMNS ================= */}
-      <div className="grid md:grid-cols-3 gap-6">
-
-        {/* UPCOMING */}
-        <BatchColumn
-          title="Upcoming"
-          color="yellow"
-          batches={upcoming}
-          onEdit={(id) => navigate(`/admin/batches/create?id=${id}`)}
-          onDelete={confirmDelete}
-        />
-
-        {/* ONGOING */}
-        <BatchColumn
-          title="Ongoing"
-          color="blue"
-          batches={ongoing}
-          onEdit={(id) => navigate(`/admin/batches/create?id=${id}`)}
-          onDelete={confirmDelete}
-        />
-
-        {/* COMPLETED */}
-        <BatchColumn
-          title="Completed"
-          color="green"
-          batches={completed}
-          onEdit={(id) => navigate(`/admin/batches/create?id=${id}`)}
-          onDelete={confirmDelete}
-        />
-
+      {/* ================= COLUMNS ================= */}
+      <div className="grid md:grid-cols-3 gap-8">
+        {Object.entries(grouped).map(([status, list]) => (
+          <BatchColumn
+            key={status}
+            title={status}
+            batches={list}
+            onEdit={(id) => navigate(`/admin/batches/create?id=${id}`)}
+            onDelete={confirmDelete}
+          />
+        ))}
       </div>
 
-      {/* ================= CONFIRM DELETE ================= */}
       <ConfirmModal
         open={showModal}
         title="Delete Batch"
-        message="Are you sure you want to delete this batch?"
+        message="This action cannot be undone. Continue?"
         onConfirm={deleteBatch}
         onCancel={() => setShowModal(false)}
       />
@@ -171,70 +188,70 @@ export default function Batches() {
 
 /* ================= COLUMN ================= */
 
-const BatchColumn = ({ title, color, batches, onEdit, onDelete }) => {
-  const colorMap = {
-    yellow: "text-yellow-700",
-    blue: "text-blue-700",
-    green: "text-green-700",
-  };
+const BatchColumn = ({ title, batches, onEdit, onDelete }) => (
+  <div className="space-y-4">
+    <h3 className="text-lg font-bold text-slate-700">
+      {title}
+      <span className="ml-2 text-sm text-slate-500">
+        ({batches.length})
+      </span>
+    </h3>
 
-  return (
-    <div className="space-y-3">
-      <h3 className={`text-lg font-bold ${colorMap[color]}`}>
-        {title} ({batches.length})
-      </h3>
+    {batches.length === 0 ? (
+      <GlassCard>
+        <p className="text-sm text-slate-500 italic text-center">
+          No {title.toLowerCase()} batches
+        </p>
+      </GlassCard>
+    ) : (
+      batches.map((b) => {
+        const status = getBatchStatus(b.startDate, b.endDate);
 
-      {batches.length === 0 ? (
-        <GlassCard>
-          <p className="text-sm text-gray-500 italic text-center">
-            No {title.toLowerCase()} batches
-          </p>
-        </GlassCard>
-      ) : (
-        batches.map((b) => (
+        return (
           <GlassCard key={b.id}>
-            <div className="flex justify-between items-start">
-              <div>
-                <h4 className="font-semibold">{b.name}</h4>
-                <p className="text-xs text-gray-600">
-                  {b.course}
-                </p>
-                <p className="text-xs text-gray-500">
+            <div className="flex justify-between gap-4">
+              <div className="space-y-1">
+                <h4 className="font-semibold text-slate-800">
+                  {b.name}
+                </h4>
+                <p className="text-xs text-slate-600">{b.course}</p>
+                <p className="text-xs text-slate-500">
                   {b.startDate} → {b.endDate}
                 </p>
+
+                <span
+                  className={`inline-block mt-2 px-3 py-1 text-xs rounded-full font-medium ${statusColor[status]}`}
+                >
+                  {status}
+                </span>
               </div>
 
               <div className="flex gap-2">
                 <button
                   onClick={() => onEdit(b.id)}
-                  className="p-1.5 rounded-full bg-blue-100 text-blue-600"
+                  className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition"
                 >
                   <FaEdit />
                 </button>
                 <button
                   onClick={() => onDelete(b.id)}
-                  className="p-1.5 rounded-full bg-red-100 text-red-600"
+                  className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition"
                 >
                   <FaTrash />
                 </button>
               </div>
             </div>
           </GlassCard>
-        ))
-      )}
-    </div>
-  );
-};
+        );
+      })
+    )}
+  </div>
+);
 
-/* ================= GLASS ================= */
+/* ================= SHARED UI ================= */
 
 const GlassCard = ({ children }) => (
-  <div className="
-    bg-white/40 backdrop-blur-[24px]
-    border border-white/40
-    rounded-2xl p-4
-    shadow-[0_20px_60px_rgba(0,0,0,0.15)]
-  ">
+  <div className="bg-white/40 backdrop-blur-[24px] border border-white/40 rounded-3xl p-6 shadow-[0_30px_90px_rgba(0,0,0,0.2)]">
     {children}
   </div>
 );

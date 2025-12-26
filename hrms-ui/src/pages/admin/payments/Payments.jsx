@@ -108,44 +108,51 @@ export default function Payments() {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold">Payments Overview</h2>
+    <div
+      className="
+        max-w-7xl mx-auto space-y-8 pb-24 animate-fadeIn
+        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
+        rounded-[32px] p-6 md:p-8
+        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
+      "
+    >
+      {/* HEADER */}
+      <div>
+        <h2 className="text-2xl font-bold text-slate-800">
+          Payments Overview
+        </h2>
+        <p className="text-sm text-slate-600">
+          Track fees, pending dues & payment history
+        </p>
+      </div>
 
-      {/* ================= MOBILE TOTAL SUMMARY (ADDED – REQUIRED FIX) ================= */}
+      {/* ================= MOBILE TOTAL SUMMARY ================= */}
       <div className="md:hidden">
-        <div className="rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-pink-500/10 p-4 shadow space-y-3">
-          <div className="flex justify-between font-semibold">
-            <span>Total Fee</span>
-            <span>₹{totalFee}</span>
+        <GlassCard>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between font-semibold">
+              <span>Total Fee</span>
+              <span>₹{totalFee}</span>
+            </div>
+            <div className="flex justify-between font-semibold text-emerald-600">
+              <span>Collected</span>
+              <span>₹{totalPaid}</span>
+            </div>
+            <div className="flex justify-between font-semibold text-red-600">
+              <span>Pending</span>
+              <span>₹{totalDue}</span>
+            </div>
           </div>
-          <div className="flex justify-between font-semibold text-emerald-600">
-            <span>Collected</span>
-            <span>₹{totalPaid}</span>
-          </div>
-          <div className="flex justify-between font-semibold text-red-600">
-            <span>Pending</span>
-            <span>₹{totalDue}</span>
-          </div>
-        </div>
+        </GlassCard>
       </div>
 
       {/* ================= MOBILE CARDS ================= */}
       <div className="md:hidden space-y-4">
         {paginated.map((s) => (
-          <div key={s.id} className="bg-white rounded-2xl p-4 shadow">
+          <GlassCard key={s.id}>
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-semibold">{s.name}</h3>
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                  s.status === "PAID"
-                    ? "bg-green-100 text-green-700"
-                    : s.status === "OVERDUE"
-                    ? "bg-red-100 text-red-700"
-                    : "bg-yellow-100 text-yellow-700"
-                }`}
-              >
-                {s.status}
-              </span>
+              <StatusBadge status={s.status} />
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -156,10 +163,10 @@ export default function Payments() {
               <div className="col-span-2"><b>Last Pay:</b> {s.lastPayment}</div>
             </div>
 
-            <div className="flex gap-4 mt-4">
+            <div className="flex justify-between items-center mt-4">
               <button
                 onClick={() => setSelectedStudent(s)}
-                className="text-purple-600 font-medium"
+                className="text-purple-600 font-semibold"
               >
                 Add Payment
               </button>
@@ -173,96 +180,93 @@ export default function Payments() {
                 </button>
               )}
             </div>
-          </div>
+          </GlassCard>
         ))}
       </div>
 
       {/* ================= DESKTOP TABLE ================= */}
-      <div className="hidden md:block bg-white rounded-2xl shadow overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead className="bg-slate-50 border-b">
-            <tr>
-              <th className="p-3 w-[200px] text-left">Student</th>
-              <th className="w-[140px] text-left">Phone</th>
-              <th className="w-[120px] text-center">Total</th>
-              <th className="w-[120px] text-center">Paid</th>
-              <th className="w-[120px] text-center">Due</th>
-              <th className="w-[160px] text-center">Last Payment</th>
-              <th className="w-[120px] text-center">Status</th>
-              <th className="w-[140px] text-center">Action</th>
-            </tr>
-          </thead>
+      <div className="hidden md:block">
+        <GlassCard>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b text-slate-600">
+                <tr>
+                  <th className="py-3 text-left">Student</th>
+                  <th>Phone</th>
+                  <th>Total</th>
+                  <th>Paid</th>
+                  <th>Due</th>
+                  <th>Last Payment</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
 
-          <tbody>
-            {paginated.map((s) => (
-              <tr key={s.id} className="border-t hover:bg-slate-50">
-                <td className="p-3 font-medium">{s.name}</td>
-                <td>{s.phone}</td>
-                <td className="text-center">₹{s.total}</td>
-                <td className="text-center text-emerald-600">₹{s.paid}</td>
-                <td className="text-center text-red-600">₹{s.due}</td>
-                <td className="text-center">{s.lastPayment}</td>
-                <td className="text-center">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      s.status === "PAID"
-                        ? "bg-green-100 text-green-700"
-                        : s.status === "OVERDUE"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {s.status}
-                  </span>
-                </td>
-                <td>
-                  <div className="flex justify-center gap-3">
-                    <button
-                      onClick={() => setSelectedStudent(s)}
-                      className="text-purple-600 font-medium"
-                    >
-                      Add
-                    </button>
-                    {s.status !== "PAID" && (
-                      <button
-                        onClick={() => sendWhatsAppReminder(s)}
-                        className="text-green-600"
-                      >
-                        <FaWhatsapp />
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+              <tbody>
+                {paginated.map((s) => (
+                  <tr key={s.id} className="border-b last:border-0">
+                    <td className="py-3 font-medium">{s.name}</td>
+                    <td>{s.phone}</td>
+                    <td className="text-center">₹{s.total}</td>
+                    <td className="text-center text-emerald-600">₹{s.paid}</td>
+                    <td className="text-center text-red-600">₹{s.due}</td>
+                    <td className="text-center">{s.lastPayment}</td>
+                    <td className="text-center">
+                      <StatusBadge status={s.status} />
+                    </td>
+                    <td className="text-center">
+                      <div className="flex justify-center gap-3">
+                        <button
+                          onClick={() => setSelectedStudent(s)}
+                          className="text-purple-600 font-semibold"
+                        >
+                          Add
+                        </button>
+                        {s.status !== "PAID" && (
+                          <button
+                            onClick={() => sendWhatsAppReminder(s)}
+                            className="text-green-600"
+                          >
+                            <FaWhatsapp />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-          <tfoot>
-            <tr>
-              <td colSpan={8}>
-                <div className="m-4 rounded-xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-pink-500/10 px-6 py-4 flex justify-between font-semibold">
-                  <span>Total Fee: ₹{totalFee}</span>
-                  <span className="text-emerald-600">Collected: ₹{totalPaid}</span>
-                  <span className="text-red-600">Pending: ₹{totalDue}</span>
-                </div>
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+            {/* TOTAL BAR */}
+            <div className="mt-6 flex justify-between font-semibold text-sm">
+              <span>Total Fee: ₹{totalFee}</span>
+              <span className="text-emerald-600">
+                Collected: ₹{totalPaid}
+              </span>
+              <span className="text-red-600">
+                Pending: ₹{totalDue}
+              </span>
+            </div>
+          </div>
+        </GlassCard>
       </div>
 
       {/* PAGINATION */}
-      <div className="flex justify-between text-sm">
+      <div className="flex justify-between items-center text-sm">
         <span>
-          Showing {start + 1}–{Math.min(start + PAGE_SIZE, rows.length)} of {rows.length}
+          Showing {start + 1}–
+          {Math.min(start + PAGE_SIZE, rows.length)} of {rows.length}
         </span>
+
         <div className="flex gap-2">
           {[...Array(totalPages)].map((_, i) => (
             <button
               key={i}
               onClick={() => setPage(i + 1)}
-              className={`px-3 py-1 rounded ${
-                page === i + 1 ? "bg-purple-600 text-white" : "border"
+              className={`px-3 py-1 rounded-lg ${
+                page === i + 1
+                  ? "bg-purple-600 text-white"
+                  : "bg-white/60"
               }`}
             >
               {i + 1}
@@ -282,6 +286,32 @@ export default function Payments() {
   );
 }
 
+/* ================= UI ================= */
+
+function GlassCard({ children }) {
+  return (
+    <div className="bg-white/40 backdrop-blur-xl border border-white/40 rounded-3xl p-6 shadow">
+      {children}
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  return (
+    <span
+      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+        status === "PAID"
+          ? "bg-green-200 text-green-800"
+          : status === "OVERDUE"
+          ? "bg-red-200 text-red-800"
+          : "bg-yellow-200 text-yellow-800"
+      }`}
+    >
+      {status}
+    </span>
+  );
+}
+
 /* ================= MODAL ================= */
 
 function AddPaymentModal({ student, onClose, onSave }) {
@@ -293,13 +323,12 @@ function AddPaymentModal({ student, onClose, onSave }) {
   const due = total - student.paid;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white w-96 rounded-2xl p-6 space-y-4 shadow-xl">
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+      <div className="bg-white w-96 max-w-[90%] rounded-3xl p-6 space-y-4 shadow-xl">
         <h3 className="text-lg font-semibold">Add Payment</h3>
 
         <div className="bg-slate-50 rounded-xl p-3 text-sm space-y-2">
-          <div className="flex justify-between items-center">
-            <span>Total Fee</span>
+          <Row label="Total Fee">
             {!editingTotal ? (
               <div className="flex items-center gap-2">
                 <span className="font-semibold">₹{total}</span>
@@ -313,7 +342,7 @@ function AddPaymentModal({ student, onClose, onSave }) {
                   type="number"
                   value={total}
                   onChange={(e) => setTotal(Number(e.target.value))}
-                  className="w-28 border rounded px-2 py-1"
+                  className="w-24 border rounded px-2 py-1"
                 />
                 <button onClick={() => setEditingTotal(false)}>
                   <FaCheck />
@@ -323,17 +352,15 @@ function AddPaymentModal({ student, onClose, onSave }) {
                 </button>
               </div>
             )}
-          </div>
+          </Row>
 
-          <div className="flex justify-between">
-            <span>Paid</span>
+          <Row label="Paid">
             <span className="text-emerald-600">₹{student.paid}</span>
-          </div>
+          </Row>
 
-          <div className="flex justify-between">
-            <span>Due</span>
+          <Row label="Due">
             <span className="text-red-600">₹{due}</span>
-          </div>
+          </Row>
         </div>
 
         <input
@@ -341,13 +368,13 @@ function AddPaymentModal({ student, onClose, onSave }) {
           placeholder="Payment Amount"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="w-full border rounded-lg px-3 py-2"
+          className="w-full glass-input"
         />
 
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value)}
-          className="w-full border rounded-lg px-3 py-2"
+          className="w-full glass-input"
         >
           <option>UPI</option>
           <option>Cash</option>
@@ -372,6 +399,15 @@ function AddPaymentModal({ student, onClose, onSave }) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Row({ label, children }) {
+  return (
+    <div className="flex justify-between items-center">
+      <span>{label}</span>
+      {children}
     </div>
   );
 }

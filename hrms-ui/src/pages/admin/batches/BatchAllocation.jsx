@@ -6,9 +6,15 @@ import Toast from "../../../components/Toast";
 /* ================= STATUS HELPERS ================= */
 
 const STATUS_COLORS = {
-  ToStart: "bg-gray-200/60 text-gray-800",
-  InProgress: "bg-blue-200/60 text-blue-800",
-  Done: "bg-green-200/60 text-green-800",
+  ToStart: "bg-gray-200/70 text-gray-800",
+  InProgress: "bg-blue-200/70 text-blue-800",
+  Done: "bg-green-200/70 text-green-800",
+};
+
+const STATUS_LABEL = {
+  ToStart: "To Start",
+  InProgress: "In Progress",
+  Done: "Completed",
 };
 
 const getBatchStatus = (startDate, endDate) => {
@@ -21,6 +27,8 @@ const getBatchStatus = (startDate, endDate) => {
   if (today > end) return "Done";
   return "InProgress";
 };
+
+/* ================= MAIN ================= */
 
 export default function BatchAllocation() {
   const navigate = useNavigate();
@@ -45,28 +53,30 @@ export default function BatchAllocation() {
     const storedAllocations =
       JSON.parse(localStorage.getItem("batchAllocations")) || {};
 
-    const normalizedAllocations = {};
-
-    storedBatches.forEach((batch) => {
-      normalizedAllocations[batch.id] = {
-        students: storedAllocations[batch.id]?.students || [],
-        status: getBatchStatus(batch.startDate, batch.endDate),
+    const normalized = {};
+    storedBatches.forEach((b) => {
+      normalized[b.id] = {
+        students: storedAllocations[b.id]?.students || [],
+        status: getBatchStatus(b.startDate, b.endDate),
       };
     });
 
     localStorage.setItem(
       "batchAllocations",
-      JSON.stringify(normalizedAllocations)
+      JSON.stringify(normalized)
     );
 
     setBatches(storedBatches);
     setStudents(storedStudents);
-    setAllocations(normalizedAllocations);
+    setAllocations(normalized);
   }, []);
 
-  /* ================= LOAD STUDENTS FOR SELECTED BATCH ================= */
+  /* ================= LOAD STUDENTS ON BATCH CHANGE ================= */
   useEffect(() => {
-    if (!selectedBatch) return;
+    if (!selectedBatch) {
+      setSelectedStudents([]);
+      return;
+    }
     setSelectedStudents(
       allocations[selectedBatch]?.students || []
     );
@@ -88,7 +98,7 @@ export default function BatchAllocation() {
     );
   };
 
-  /* ================= SAVE ALLOCATION ================= */
+  /* ================= SAVE ================= */
   const saveAllocation = () => {
     if (!selectedBatch) {
       setToast("⚠️ Please select a batch");
@@ -97,10 +107,10 @@ export default function BatchAllocation() {
 
     const updated = { ...allocations };
 
-    // Remove student from other batches (1 student → 1 batch rule)
-    Object.keys(updated).forEach((batchId) => {
-      updated[batchId].students =
-        updated[batchId].students.filter(
+    // Ensure one student → one batch
+    Object.keys(updated).forEach((bid) => {
+      updated[bid].students =
+        updated[bid].students.filter(
           (id) => !selectedStudents.includes(id)
         );
     });
@@ -130,29 +140,30 @@ export default function BatchAllocation() {
       .map((s) => s.name)
       .join(", ");
 
-  const getStatusLabel = (st) =>
-    st === "ToStart"
-      ? "To Start"
-      : st === "InProgress"
-      ? "In Progress"
-      : "Done";
-
   return (
-    <div className="max-w-6xl space-y-8 text-gray-800">
-
+    <div
+      className="
+        max-w-6xl mx-auto space-y-8 pb-24 animate-fadeIn
+        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
+        rounded-[32px] p-6 md:p-8
+        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
+      "
+    >
       {/* ================= HEADER ================= */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <button
           onClick={() => navigate("/admin/batches")}
-          className="p-2 rounded-full bg-white/60 hover:bg-white/80 shadow"
+          className="p-2 rounded-full bg-white/60 border border-white/50"
         >
           <FaArrowLeft />
         </button>
 
         <div>
-          <h2 className="text-2xl font-bold">Batch Allocation</h2>
-          <p className="text-sm text-gray-600">
-            Allocate students from Students module
+          <h2 className="text-2xl font-bold text-slate-800">
+            Batch Allocation
+          </h2>
+          <p className="text-sm text-slate-600">
+            Assign students to training batches
           </p>
         </div>
       </div>
@@ -163,7 +174,7 @@ export default function BatchAllocation() {
         <select
           value={selectedBatch}
           onChange={(e) => setSelectedBatch(e.target.value)}
-          className="w-full mt-1 mb-4 p-3 rounded-xl bg-white/70 border"
+          className="glass-input mt-1 mb-4"
         >
           <option value="">-- Select Batch --</option>
           {batches.map((b) => (
@@ -175,23 +186,31 @@ export default function BatchAllocation() {
 
         {selectedBatch && (
           <>
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between items-center mb-3">
               <p className="text-sm font-semibold">
-                Assign Students ({selectedStudents.length})
+                Assign Students
+                <span className="ml-2 text-xs text-purple-700">
+                  ({selectedStudents.length} selected)
+                </span>
               </p>
+
               <input
                 placeholder="Search student..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="p-2 rounded-lg bg-white/70 border text-sm"
+                className="glass-input text-sm w-48"
               />
             </div>
 
-            <div className="grid md:grid-cols-2 gap-2">
+            <div className="grid md:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-2">
               {filteredStudents.map((s) => (
                 <label
                   key={s.id}
-                  className="flex items-center gap-3 bg-white/60 p-3 rounded-xl"
+                  className="
+                    flex items-center gap-3
+                    bg-white/60 p-3 rounded-xl
+                    hover:bg-white/80 transition
+                  "
                 >
                   <input
                     type="checkbox"
@@ -205,8 +224,15 @@ export default function BatchAllocation() {
 
             <button
               onClick={saveAllocation}
-              className="mt-4 flex items-center gap-2 px-6 py-2.5 rounded-full
-                bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow"
+              disabled={!selectedBatch}
+              className="
+                mt-5 flex items-center gap-2 px-7 py-3 rounded-full
+                font-semibold text-white
+                bg-gradient-to-r from-purple-600 to-indigo-600
+                hover:from-purple-700 hover:to-indigo-700
+                shadow-lg transition
+                disabled:opacity-50
+              "
             >
               <FaCheckCircle />
               Save Allocation
@@ -220,22 +246,24 @@ export default function BatchAllocation() {
         {batches.map((batch) => {
           const alloc = allocations[batch.id];
           const count = alloc?.students.length || 0;
-          const st = getBatchStatus(batch.startDate, batch.endDate);
+          const status = getBatchStatus(batch.startDate, batch.endDate);
 
           return (
             <GlassCard key={batch.id}>
               <div className="flex justify-between items-center mb-2">
                 <div>
-                  <h3 className="font-semibold">{batch.name}</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3 className="font-semibold text-slate-800">
+                    {batch.name}
+                  </h3>
+                  <p className="text-sm text-slate-600">
                     {batch.course}
                   </p>
                 </div>
 
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[st]}`}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[status]}`}
                 >
-                  {getStatusLabel(st)}
+                  {STATUS_LABEL[status]}
                 </span>
               </div>
 
@@ -245,7 +273,7 @@ export default function BatchAllocation() {
               </div>
 
               {count > 0 && (
-                <div className="mt-2 text-xs text-gray-600">
+                <div className="mt-2 text-xs text-slate-600">
                   {getStudentNames(alloc.students)}
                 </div>
               )}
@@ -259,11 +287,17 @@ export default function BatchAllocation() {
   );
 }
 
-/* ================= SHARED GLASS ================= */
+/* ================= SHARED UI ================= */
 
 const GlassCard = ({ children }) => (
-  <div className="bg-white/40 backdrop-blur-[24px] border border-white/40 rounded-3xl p-6
-    shadow-[0_30px_90px_rgba(0,0,0,0.2)]">
+  <div
+    className="
+      bg-white/40 backdrop-blur-[24px]
+      border border-white/40
+      rounded-3xl p-6
+      shadow-[0_30px_90px_rgba(0,0,0,0.2)]
+    "
+  >
     {children}
   </div>
 );
