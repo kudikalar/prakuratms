@@ -5,11 +5,13 @@ on:
     branches:
       - development
 
+# Required permissions for GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# Prevent overlapping deployments
 concurrency:
   group: github-pages
   cancel-in-progress: true
@@ -19,9 +21,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -29,14 +33,17 @@ jobs:
           cache: npm
           cache-dependency-path: hrms-ui/package-lock.json
 
+      # 3️⃣ Install dependencies (strict & production-safe)
       - name: Install dependencies
         working-directory: hrms-ui
         run: npm ci
 
-      - name: Build frontend (Vite)
+      # 4️⃣ Build frontend (Vite)
+      - name: Build frontend
         working-directory: hrms-ui
         run: npm run build
 
+      # 5️⃣ Upload build output for GitHub Pages
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -50,6 +57,7 @@ jobs:
       name: github-pages
 
     steps:
+      # 6️⃣ Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
