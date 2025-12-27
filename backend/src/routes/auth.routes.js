@@ -1,9 +1,25 @@
 import express from "express";
-import { registerUser, loginUser } from "../controllers/auth.controller.js";
+
+/* 👇 THESE NAMES MUST MATCH CONTROLLER EXPORTS 👇 */
+import {
+  adminLogin,
+  educatorLogin,
+  studentLogin,
+  createAdmin,
+  createEducator,
+  createStudent
+} from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
-router.post("/register", registerUser);   // 👈 OPEN
-router.post("/login", loginUser);
+/* CREATE USERS */
+router.post("/admin/create", createAdmin);
+router.post("/educator/create", createEducator);
+router.post("/student/create", createStudent);
+
+/* LOGIN */
+router.post("/admin/login", adminLogin);
+router.post("/educator/login", educatorLogin);
+router.post("/student/login", studentLogin);
 
 export default router;
