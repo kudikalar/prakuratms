@@ -37,7 +37,6 @@ const roles = [
   { name: "Educator", color: "blue", icon: <FaChalkboardTeacher /> },
   { name: "Admin", color: "purple", icon: <FaUserShield /> },
 ];
-
 const roleContent = {
   Student: {
     title: "Unlock Your Learning Potential",
@@ -47,7 +46,7 @@ const roleContent = {
   Educator: {
     title: "Shape the Future of Learning",
     desc: "Manage courses, mentor students, and deliver impactful learning experiences.",
-    redirect: "/admin/dashboard",
+    redirect: "/educator/dashboard", // ✅ FIXED
   },
   Admin: {
     title: "Secure Platform Administration",
@@ -55,6 +54,7 @@ const roleContent = {
     redirect: "/admin/dashboard",
   },
 };
+
 
 /* ================= ENV ================= */
 
