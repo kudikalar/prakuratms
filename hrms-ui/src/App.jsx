@@ -112,7 +112,7 @@ import ReferralRequests from "./pages/student/ReferralRequests";
 import OneToOneDiscussions from "./pages/student/OneToOneDiscussions";
 import Profile from "./pages/student/Profile";
 import OverallStudentReport from "./pages/student/OverallStudentReport";
-import StudentAIcoach from "./pages/student/StudentAIcoach";
+import StudentAICoach from "./pages/student/StudentAICoach";
 
 /* ================= HELPERS ================= */
 
@@ -264,7 +264,7 @@ export default function App() {
           <Route path="alumni-matcher" element={<AlumniStoryMatcher />} />
           <Route path="referrals" element={<ReferralRequests />} />
           <Route path="discussions" element={<OneToOneDiscussions />} />
-          <Route path="ai-coach" element={<StudentAIcoach />} />
+          <Route path="ai-coach" element={<StudentAICoach />} />
           <Route path="report" element={<OverallStudentReport />} />
           <Route path="profile" element={<Profile />} />
         </Route>
