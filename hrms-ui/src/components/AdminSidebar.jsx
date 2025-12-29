@@ -13,14 +13,16 @@ import {
   FaChartBar,
   FaShieldAlt,
   FaChevronDown,
-  FaBars,
-  FaTimes,
   FaLifeRing,
 } from "react-icons/fa";
 
 import PrakuraLogo from "../assets/prakura-logo.png";
 
 /* ================= ROLE ACCESS ================= */
+/* NOTE:
+   - Admin / Educator use ROLE_ACCESS filtering
+   - Student gets FULL menu automatically (no filtering)
+*/
 
 const ROLE_ACCESS = {
   Admin: [
@@ -39,24 +41,22 @@ const ROLE_ACCESS = {
   ],
   Finance: ["Dashboard", "Payments", "Finance", "Help & Support"],
   Counsellor: ["Dashboard", "Payments", "Help & Support"],
-  Educator: ["Dashboard", "Assessments", "Attendance", "Help & Support"],
-  Student: [
+  Educator: [
     "Dashboard",
     "My Courses",
-    "Projects",
-    "Placement",
-    "Skills & Goals",
-    "Documents",
-    "Community",
+    "Batches",
+    "Students",
+    "Attendance",
+    "Assessments",
     "Reports",
-    "Profile",
-    "Notifications",
-    "Payments",
+    "Messages",
+    "Analytics",
+    "Student Support",
+    "Help & Support",
   ],
 };
 
 /* ================= ADMIN MENU ================= */
-/* (UNCHANGED — ALL MENUS PRESERVED) */
 
 const ADMIN_MENU = [
   {
@@ -109,7 +109,6 @@ const ADMIN_MENU = [
     items: [
       { label: "Dashboard", path: "/admin/assessments" },
       { label: "Create", path: "/admin/assessments/create" },
-      { label: "Question Bank", path: "/admin/assessments/questions" },
       { label: "Evaluation", path: "/admin/assessments/evaluation" },
       { label: "Results", path: "/admin/assessments/results" },
     ],
@@ -130,34 +129,102 @@ const ADMIN_MENU = [
   {
     title: "Notifications",
     icon: <FaBell />,
-    items: [
-      {
-        label: "Announcements",
-        path: "/admin/notifications/announcements",
-      },
-    ],
+    items: [{ label: "Announcements", path: "/admin/notifications/announcements" }],
   },
   {
     title: "Security & Audit",
     icon: <FaShieldAlt />,
+    items: [{ label: "Activity Logs", path: "/admin/security/activity-logs" }],
+  },
+  {
+    title: "Help & Support",
+    icon: <FaLifeRing />,
+    items: [{ label: "FAQs", path: "/admin/support/faqs" }],
+  },
+];
+
+/* ================= EDUCATOR MENU ================= */
+
+const EDUCATOR_MENU = [
+  {
+    title: "Dashboard",
+    icon: <FaTachometerAlt />,
+    items: [{ label: "Overview", path: "/admin/educator/dashboard" }],
+  },
+  {
+    title: "My Courses",
+    icon: <FaBookOpen />,
     items: [
-      { label: "Activity Logs", path: "/admin/security/activity-logs" },
-      { label: "Security Audit", path: "/admin/security/audit" },
+      { label: "Assigned Courses", path: "/admin/educator/assigned-courses" },
+      { label: "Course Content", path: "/admin/educator/course-content" },
+      { label: "Lesson Planner", path: "/admin/educator/lesson-planner" },
+    ],
+  },
+  {
+    title: "Batches",
+    icon: <FaUserGraduate />,
+    items: [{ label: "My Batches", path: "/admin/educator/my-batches" }],
+  },
+  {
+    title: "Students",
+    icon: <FaUsers />,
+    items: [
+      {
+        label: "Student List",
+        path: "/admin/educator/students", // safely redirects to batches
+      },
+    ],
+  },
+  {
+    title: "Attendance",
+    icon: <FaCalendarCheck />,
+    items: [
+      { label: "Mark Attendance", path: "/admin/educator/my-batches" },
+      { label: "Attendance History", path: "/admin/educator/my-batches" },
+    ],
+  },
+  {
+    title: "Assessments",
+    icon: <FaClipboardList />,
+    items: [
+      { label: "Create Assessment", path: "/admin/assessments/create" },
+      { label: "Evaluation", path: "/admin/assessments/evaluation" },
+    ],
+  },
+  {
+    title: "Reports",
+    icon: <FaChartBar />,
+    items: [{ label: "Performance", path: "/admin/educator/performance" }],
+  },
+  {
+    title: "Messages",
+    icon: <FaBell />,
+    items: [{ label: "Messages", path: "/admin/educator/messages" }],
+  },
+  {
+    title: "Analytics",
+    icon: <FaChartBar />,
+    items: [
+      { label: "Batch Performance", path: "/admin/educator/batch-analytics" },
+      { label: "Course Reports", path: "/admin/educator/course-reports" },
+    ],
+  },
+  {
+    title: "Student Support",
+    icon: <FaLifeRing />,
+    items: [
+      { label: "Intervention Alerts", path: "/admin/educator/interventions" },
+      { label: "AI Risk Prediction", path: "/admin/educator/risk-prediction" },
     ],
   },
   {
     title: "Help & Support",
     icon: <FaLifeRing />,
-    items: [
-      { label: "FAQs", path: "/admin/support/faqs" },
-      { label: "Support Tickets", path: "/admin/support/tickets" },
-      { label: "Contact Admin", path: "/admin/support/contact" },
-    ],
+    items: [{ label: "Support", path: "/admin/support/faqs" }],
   },
 ];
 
-/* ================= STUDENT MENU ================= */
-/* (UNCHANGED — ALL MENUS PRESERVED) */
+/* ================= STUDENT MENU (FULL – NO FILTERING) ================= */
 
 const STUDENT_MENU = [
   {
@@ -179,69 +246,83 @@ const STUDENT_MENU = [
     icon: <FaClipboardList />,
     items: [
       { label: "My Projects", path: "/student/projects" },
-      { label: "Progress", path: "/student/projects/progress" },
-      { label: "Daily Tasks", path: "/student/daily-tasks" },
-      { label: "Submissions", path: "/student/projects/submissions" },
-      { label: "Reviews", path: "/student/projects/reviews" },
-      { label: "Evaluation", path: "/student/projects/evaluation" },
-    ],
-  },
-  {
-    title: "Placement",
-    icon: <FaChartBar />,
-    items: [
-      { label: "Eligibility", path: "/student/placement/eligibility" },
-      { label: "Readiness", path: "/student/placement/readiness" },
-      { label: "Placements", path: "/student/placement" },
-      { label: "Mock Interviews", path: "/student/mock-interviews" },
-      { label: "Mock Results", path: "/student/mock-results" },
-      { label: "Interview Schedule", path: "/student/interviews" },
+      { label: "Project Progress", path: "/student/project-progress" },
+      { label: "Project Submission", path: "/student/project-submission" },
+      { label: "Project Review", path: "/student/project-review" },
+      { label: "Project Evaluation", path: "/student/project-evaluation" },
     ],
   },
   {
     title: "Skills & Goals",
     icon: <FaChartPie />,
     items: [
-      { label: "Skill Gap Analyzer", path: "/student/skill-gap" },
+      { label: "Daily Tasks", path: "/student/daily-tasks" },
       { label: "Weekly Goals", path: "/student/weekly-goals" },
+      { label: "Skill Gap Analyzer", path: "/student/skill-gap" },
+    ],
+  },
+  {
+    title: "Mock Interviews",
+    icon: <FaUserGraduate />,
+    items: [
+      { label: "Mock Interviews", path: "/student/mock-interviews" },
+      { label: "Mock Results", path: "/student/mock-results" },
+      { label: "Scheduled Interviews", path: "/student/interviews" },
+    ],
+  },
+  {
+    title: "Placements",
+    icon: <FaChartBar />,
+    items: [
+      { label: "Eligibility", path: "/student/placement-eligibility" },
+      { label: "Readiness", path: "/student/placement-readiness" },
+      { label: "Job Openings", path: "/student/placements" },
+      { label: "Placement Stats", path: "/student/placement-stats" },
     ],
   },
   {
     title: "Documents",
-    icon: <FaShieldAlt />,
+    icon: <FaBookOpen />,
     items: [
+      { label: "Resume Builder", path: "/student/resume-builder" },
       { label: "Certificates", path: "/student/certificates" },
       { label: "Documents", path: "/student/documents" },
-      { label: "Resume Builder", path: "/student/resume-builder" },
     ],
+  },
+  {
+    title: "Payments",
+    icon: <FaMoneyBill />,
+    items: [{ label: "Payments", path: "/student/payments" }],
   },
   {
     title: "Community",
     icon: <FaUsers />,
     items: [
-      { label: "Students", path: "/student/peers" },
+      { label: "Peers", path: "/student/peers" },
       { label: "Alumni", path: "/student/alumni" },
+      { label: "Alumni Stories", path: "/student/alumni-stories" },
+      { label: "Alumni Matcher", path: "/student/alumni-matcher" },
+      { label: "Referrals", path: "/student/referrals" },
+      { label: "Discussions", path: "/student/discussions" },
     ],
   },
   {
-    title: "Reports",
+    title: "Reports & AI",
     icon: <FaChartBar />,
-    items: [{ label: "Overall Report", path: "/student/report" }],
+    items: [
+      { label: "Overall Report", path: "/student/report" },
+      { label: "AI Coach", path: "/student/ai-coach" },
+    ],
+  },
+  {
+    title: "Notifications",
+    icon: <FaBell />,
+    items: [{ label: "Notifications", path: "/student/notifications" }],
   },
   {
     title: "Profile",
     icon: <FaUserGraduate />,
     items: [{ label: "My Profile", path: "/student/profile" }],
-  },
-  {
-    title: "Notifications",
-    icon: <FaBell />,
-    items: [{ label: "My Notifications", path: "/student/notifications" }],
-  },
-  {
-    title: "Payments",
-    icon: <FaMoneyBill />,
-    items: [{ label: "Payment History", path: "/student/payments" }],
   },
 ];
 
@@ -264,140 +345,74 @@ export default function AdminSidebar() {
         user.role.slice(1).toLowerCase()
       : "Admin";
 
-  const allowedMenus = ROLE_ACCESS[role] || [];
-  const ACTIVE_MENU = role === "Student" ? STUDENT_MENU : ADMIN_MENU;
+  const ACTIVE_MENU =
+    role === "Student"
+      ? STUDENT_MENU
+      : role === "Educator"
+      ? EDUCATOR_MENU
+      : ADMIN_MENU;
+
+  const allowedMenus =
+    role === "Student"
+      ? ACTIVE_MENU.map((m) => m.title) // 🔥 FIX: show all student menus
+      : ROLE_ACCESS[role] || [];
 
   const [openMenu, setOpenMenu] = useState(null);
-  const [collapsed, setCollapsed] = useState(false);
-  const [search, setSearch] = useState("");
-  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const filteredMenu = ACTIVE_MENU.filter(
-    (m) => allowedMenus.includes(m.title) || role === "Admin"
-  ).map((m) => ({
-    ...m,
-    items: m.items.filter(
-      (i) =>
-        i.label.toLowerCase().includes(search.toLowerCase()) ||
-        m.title.toLowerCase().includes(search.toLowerCase())
-    ),
-  }));
-
-  /* AUTO OPEN ACTIVE MENU */
   useEffect(() => {
-    const active = filteredMenu.find((m) =>
+    const active = ACTIVE_MENU.find((m) =>
       m.items.some((i) => location.pathname.startsWith(i.path))
     );
-    if (active && openMenu === null) setOpenMenu(active.title);
-  }, [location.pathname, filteredMenu, openMenu]);
-
-  /* MOBILE OPEN HANDLER */
-  useEffect(() => {
-    const handler = () => {
-      setMobileOpen(true);
-      document.body.style.overflow = "hidden";
-    };
-    window.addEventListener("OPEN_ADMIN_SIDEBAR", handler);
-    return () => window.removeEventListener("OPEN_ADMIN_SIDEBAR", handler);
-  }, []);
-
-  /* CLOSE ON ROUTE CHANGE */
-  useEffect(() => {
-    setMobileOpen(false);
-    document.body.style.overflow = "";
-  }, [location.pathname]);
+    if (active) setOpenMenu(active.title);
+  }, [location.pathname, ACTIVE_MENU]);
 
   return (
-    <>
-      {/* MOBILE OVERLAY */}
-      {mobileOpen && (
-        <div
-          onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
-        />
-      )}
+    <aside className="fixed md:static z-50 h-full md:h-screen w-72 bg-gradient-to-br from-blue-800 via-blue-900 to-indigo-900 border-r border-white/20">
+      <div className="px-4 py-4 flex items-center gap-3 border-b border-white/20">
+        <img src={PrakuraLogo} className="w-8 h-8" />
+        <span className="text-white font-semibold">PRAKURA TMS</span>
+      </div>
 
-      <aside
-        className={`fixed md:static z-50 h-full md:h-screen
-        bg-gradient-to-br from-blue-800 via-blue-900 to-indigo-900
-        border-r border-white/20 transition-all duration-300
-        ${collapsed ? "w-20" : "w-72"}
-        ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-        `}
-      >
-        {/* HEADER */}
-        <div className="px-4 py-4 flex justify-between items-center border-b border-white/20">
-          <div className="flex items-center gap-3">
-            <img src={PrakuraLogo} className="w-8 h-8" />
-            {!collapsed && (
-              <span className="text-white font-semibold">PRAKURA TMS</span>
+      <nav className="px-2 space-y-1 text-white text-sm overflow-y-auto">
+        {ACTIVE_MENU.filter(
+          (m) => allowedMenus.includes(m.title) || role === "Admin"
+        ).map((menu) => (
+          <div key={menu.title}>
+            <div
+              className="flex justify-between items-center px-3 py-2 rounded-lg cursor-pointer hover:bg-white/10"
+              onClick={() =>
+                setOpenMenu((p) => (p === menu.title ? null : menu.title))
+              }
+            >
+              <div className="flex items-center gap-3">
+                {menu.icon}
+                {menu.title}
+              </div>
+              <FaChevronDown />
+            </div>
+
+            {openMenu === menu.title && (
+              <div className="ml-8 space-y-1">
+                {menu.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `block px-3 py-1.5 rounded-md ${
+                        isActive
+                          ? "bg-white/20 font-medium"
+                          : "hover:bg-white/10"
+                      }`
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
             )}
           </div>
-
-          <button
-            className="text-white md:hidden"
-            onClick={() => setMobileOpen(false)}
-          >
-            <FaTimes />
-          </button>
-        </div>
-
-        {!collapsed && (
-          <div className="p-3">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search..."
-              className="w-full px-3 py-2 rounded-lg bg-white/10 text-white placeholder-white/60"
-            />
-          </div>
-        )}
-
-        <nav className="px-2 space-y-1 text-white text-sm overflow-y-auto">
-          {filteredMenu.map((menu) => (
-            <div key={menu.title}>
-              <div
-                className="flex justify-between items-center px-3 py-2 rounded-lg cursor-pointer hover:bg-white/10"
-                onClick={() =>
-                  setOpenMenu((p) => (p === menu.title ? null : menu.title))
-                }
-              >
-                <div className="flex items-center gap-3">
-                  {menu.icon}
-                  {!collapsed && menu.title}
-                </div>
-                {!collapsed && menu.items.length > 1 && (
-                  <FaChevronDown
-                    className={`transition ${
-                      openMenu === menu.title ? "rotate-180" : ""
-                    }`}
-                  />
-                )}
-              </div>
-
-              {!collapsed && openMenu === menu.title && (
-                <div className="ml-8 space-y-1">
-                  {menu.items.map((item) => (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      className={({ isActive }) =>
-                        `block px-3 py-1.5 rounded-md ${
-                          isActive
-                            ? "bg-white/20 font-medium"
-                            : "hover:bg-white/10"
-                        }`
-                      }
-                    >
-                      {item.label}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </nav>
-      </aside>
-    </>
+        ))}
+      </nav>
+    </aside>
   );
 }

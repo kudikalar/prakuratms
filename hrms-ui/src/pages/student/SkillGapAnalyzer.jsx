@@ -8,7 +8,7 @@ import {
 } from "react-icons/fa";
 
 /* =====================================================
-   STUDENT SKILL GAP ANALYZER – NEXT LEVEL
+   STUDENT SKILL GAP ANALYZER – TABLE FORMAT
 ===================================================== */
 
 export default function SkillGapAnalyzer() {
@@ -56,17 +56,15 @@ export default function SkillGapAnalyzer() {
     ]);
   }, []);
 
-  /* ================= DERIVED METRICS ================= */
+  /* ================= DERIVED ================= */
 
   const enrichedSkills = useMemo(() => {
-    return [...skills]
+    return skills
       .map((s) => {
         const gap = s.required - s.current;
-
         let level = "Strong";
         if (gap > 15) level = "Critical";
         else if (gap > 5) level = "Needs Improvement";
-
         return { ...s, gap, level };
       })
       .sort((a, b) => b.gap - a.gap);
@@ -88,11 +86,11 @@ export default function SkillGapAnalyzer() {
           Skill Gap Analyzer
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          Measure readiness against industry-required skill benchmarks
+          Industry readiness comparison in tabular format
         </p>
       </div>
 
-      {/* OVERALL READINESS */}
+      {/* READINESS */}
       <div className="bg-white/70 rounded-2xl p-6 shadow border flex justify-between items-center">
         <div className="flex items-center gap-3">
           <FaChartLine className="text-indigo-600 text-xl" />
@@ -113,92 +111,105 @@ export default function SkillGapAnalyzer() {
         </span>
       </div>
 
-      {/* SKILLS */}
-      <div className="space-y-4">
-        {enrichedSkills.map((s, i) => (
-          <SkillCard key={i} data={s} />
-        ))}
-      </div>
+      {/* TABLE */}
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow border overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead className="bg-slate-100 text-slate-600">
+            <tr>
+              <th className="px-6 py-4 text-left">Skill</th>
+              <th className="px-6 py-4 text-center">Current</th>
+              <th className="px-6 py-4 text-center">Required</th>
+              <th className="px-6 py-4 text-center">Gap</th>
+              <th className="px-6 py-4 text-center">Status</th>
+              <th className="px-6 py-4 text-left">Recommendation</th>
+            </tr>
+          </thead>
 
-      {!skills.length && (
-        <p className="text-center text-sm text-slate-400">
-          No skill data available
-        </p>
-      )}
+          <tbody>
+            {enrichedSkills.map((s, i) => {
+              const statusMap = {
+                Strong: {
+                  icon: <FaCheckCircle />,
+                  color: "text-emerald-600",
+                  badge: "bg-emerald-100",
+                },
+                "Needs Improvement": {
+                  icon: <FaArrowDown />,
+                  color: "text-yellow-600",
+                  badge: "bg-yellow-100",
+                },
+                Critical: {
+                  icon: <FaExclamationTriangle />,
+                  color: "text-red-600",
+                  badge: "bg-red-100",
+                },
+              };
+
+              const status = statusMap[s.level];
+
+              return (
+                <tr
+                  key={i}
+                  className="border-t hover:bg-slate-50 transition"
+                >
+                  {/* SKILL */}
+                  <td className="px-6 py-4 font-medium text-slate-800 flex items-center gap-2">
+                    <FaTools className="text-indigo-600" />
+                    {s.skill}
+                  </td>
+
+                  {/* CURRENT */}
+                  <td className="px-6 py-4 text-center">
+                    <Progress value={s.current} color="bg-indigo-500" />
+                  </td>
+
+                  {/* REQUIRED */}
+                  <td className="px-6 py-4 text-center">
+                    <Progress value={s.required} color="bg-emerald-500" />
+                  </td>
+
+                  {/* GAP */}
+                  <td className="px-6 py-4 text-center font-semibold text-slate-700">
+                    {s.gap}%
+                  </td>
+
+                  {/* STATUS */}
+                  <td className="px-6 py-4 text-center">
+                    <span
+                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${status.badge} ${status.color}`}
+                    >
+                      {status.icon}
+                      {s.level}
+                    </span>
+                  </td>
+
+                  {/* RECOMMENDATION */}
+                  <td className="px-6 py-4 text-slate-600">
+                    {s.recommendation}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {!skills.length && (
+          <p className="text-center py-6 text-slate-400">
+            No skill data available
+          </p>
+        )}
+      </div>
     </div>
   );
 }
 
 /* =====================================================
-   COMPONENTS
+   SHARED
 ===================================================== */
 
-const SkillCard = ({ data }) => {
-  const statusMap = {
-    Strong: {
-      icon: <FaCheckCircle />,
-      color: "text-emerald-600",
-      badge: "bg-emerald-100",
-    },
-    "Needs Improvement": {
-      icon: <FaArrowDown />,
-      color: "text-yellow-600",
-      badge: "bg-yellow-100",
-    },
-    Critical: {
-      icon: <FaExclamationTriangle />,
-      color: "text-red-600",
-      badge: "bg-red-100",
-    },
-  };
-
-  const status = statusMap[data.level];
-
-  return (
-    <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 shadow border">
-      <div className="flex justify-between gap-6">
-        {/* LEFT */}
-        <div className="space-y-2">
-          <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-            <FaTools className="text-indigo-600" />
-            {data.skill}
-          </h3>
-
-          <p className="text-sm text-slate-600">
-            {data.recommendation}
-          </p>
-        </div>
-
-        {/* RIGHT */}
-        <div className="text-right space-y-2">
-          <span
-            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${status.badge} ${status.color}`}
-          >
-            {status.icon}
-            {data.level}
-          </span>
-
-          {data.gap > 0 && (
-            <p className="text-xs text-slate-500">
-              Gap: {data.gap}%
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* PROGRESS */}
-      <div className="mt-4 space-y-2">
-        <Progress label="Current Level" value={data.current} color="bg-indigo-500" />
-        <Progress label="Required Level" value={data.required} color="bg-emerald-500" />
-      </div>
-    </div>
-  );
-};
-
-const Progress = ({ label, value, color }) => (
-  <div>
+const Progress = ({ value, color }) => (
+  <div className="w-28 mx-auto">
     <div className="flex justify-between text-xs text-slate-500">
-      <span>{label}</span>
       <span>{value}%</span>
     </div>
     <div className="h-2 rounded-full bg-slate-200 mt-1">

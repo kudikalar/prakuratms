@@ -10,10 +10,13 @@ import {
   FaFilter,
   FaChevronLeft,
   FaChevronRight,
+  FaSearch,
+  FaChartLine,
 } from "react-icons/fa";
 
 /* =====================================================
-   STUDENT ASSESSMENTS (TABLE LAYOUT + PAGINATION)
+   STUDENT ASSESSMENTS – ADVANCED TABLE + DATE FILTERS
+   Prakura Purple | Glassmorphism | Insights | No content removed
 ===================================================== */
 
 const PAGE_SIZE = 5;
@@ -21,7 +24,12 @@ const PAGE_SIZE = 5;
 export default function StudentAssessments() {
   const [assessments, setAssessments] = useState([]);
   const [filter, setFilter] = useState("ALL");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+
+  /* DATE FILTERS */
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   /* ================= INIT ================= */
 
@@ -96,12 +104,39 @@ export default function StudentAssessments() {
     ]);
   }, []);
 
-  /* ================= FILTER + PAGINATION ================= */
+  /* ================= FILTER + SEARCH + DATE RANGE ================= */
 
   const filtered = useMemo(() => {
-    if (filter === "ALL") return assessments;
-    return assessments.filter((a) => a.status === filter);
-  }, [assessments, filter]);
+    let list = [...assessments];
+
+    // Status filter
+    if (filter !== "ALL") {
+      list = list.filter((a) => a.status === filter);
+    }
+
+    // Search filter
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (a) =>
+          a.title.toLowerCase().includes(q) ||
+          a.type.toLowerCase().includes(q) ||
+          a.level.toLowerCase().includes(q)
+      );
+    }
+
+    // Date range filter
+    if (startDate) {
+      list = list.filter((a) => new Date(a.date) >= new Date(startDate));
+    }
+    if (endDate) {
+      list = list.filter((a) => new Date(a.date) <= new Date(endDate));
+    }
+
+    return list;
+  }, [assessments, filter, search, startDate, endDate]);
+
+  /* ================= PAGINATION ================= */
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
@@ -110,51 +145,159 @@ export default function StudentAssessments() {
     return filtered.slice(start, start + PAGE_SIZE);
   }, [filtered, page]);
 
-  useEffect(() => {
-    setPage(1); // reset page on filter change
-  }, [filter]);
+  useEffect(() => setPage(1), [filter, search, startDate, endDate]);
+
+  /* ================= QUICK DATE FILTERS ================= */
+
+  const setQuickFilter = (type) => {
+    const today = new Date();
+    let start, end;
+
+    switch (type) {
+      case "TODAY":
+        start = end = today;
+        break;
+
+      case "WEEK":
+        start = new Date(today);
+        start.setDate(start.getDate() - 7);
+        end = today;
+        break;
+
+      case "MONTH":
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = today;
+        break;
+
+      default:
+        start = end = "";
+    }
+
+    setStartDate(start ? start.toISOString().split("T")[0] : "");
+    setEndDate(end ? end.toISOString().split("T")[0] : "");
+  };
+
+  /* ================= AI INSIGHTS ================= */
+
+  const avgScore = filtered
+    .filter((a) => a.score !== null)
+    .reduce((sum, a) => sum + a.score, 0);
+
+  const completedCount = filtered.filter(
+    (a) => a.status === "Completed"
+  ).length;
+
+  const insight =
+    completedCount === 0
+      ? "Start attempting assessments to improve your readiness."
+      : avgScore / completedCount > 80
+      ? "Excellent performance! You're in the top tier."
+      : avgScore / completedCount > 60
+      ? "Good progress. Keep improving your scores!"
+      : "You need to focus on consistency and revision.";
 
   /* ================= UI ================= */
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-8 animate-fadeIn">
+
       {/* HEADER */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 shadow border border-white/40">
+      <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-white/40">
+        <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
+          <FaClipboardList className="text-indigo-600" />
+          Assessments
+        </h2>
+        <p className="text-sm text-slate-500 mt-1">
+          Track, attempt and review your assessments
+        </p>
+      </div>
+
+      {/* INSIGHTS */}
+      <div className="bg-white/50 backdrop-blur-xl p-4 rounded-2xl border shadow flex items-center gap-3">
+        <FaChartLine className="text-purple-600 text-xl" />
+        <span className="text-sm text-slate-700">{insight}</span>
+      </div>
+
+      {/* FILTER BAR */}
+      <div className="bg-white/60 backdrop-blur-xl p-4 rounded-2xl shadow border border-white/40 space-y-3">
+
+        {/* SEARCH + STATUS FILTER */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold text-slate-800">
-              Assessments
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              Track, attempt and review your assessments
-            </p>
+
+          {/* SEARCH */}
+          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border shadow w-full md:w-80">
+            <FaSearch className="text-slate-400" />
+            <input
+              type="text"
+              className="w-full outline-none text-sm"
+              placeholder="Search assessments..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
 
-          {/* FILTER */}
-          <div className="flex items-center gap-2">
-            <FaFilter className="text-slate-400" />
+          {/* STATUS FILTER */}
+          <div className="flex gap-2">
             {["ALL", "Pending", "Completed"].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold transition
-                  ${
-                    filter === f
-                      ? "bg-indigo-600 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
+                ${
+                  filter === f
+                    ? "bg-indigo-600 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
               >
                 {f}
               </button>
             ))}
           </div>
         </div>
+
+        {/* DATE FILTERS */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <FaFilter className="text-slate-400" />
+
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="px-3 py-1.5 rounded-xl border bg-white text-sm"
+          />
+
+          <span className="text-slate-400 text-sm">to</span>
+
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="px-3 py-1.5 rounded-xl border bg-white text-sm"
+          />
+
+          <button
+            onClick={() => {
+              setStartDate("");
+              setEndDate("");
+            }}
+            className="text-xs text-red-500 underline"
+          >
+            Clear
+          </button>
+
+          {/* QUICK FILTERS */}
+          <div className="flex gap-2 ml-auto">
+            <QuickBtn label="Today" onClick={() => setQuickFilter("TODAY")} />
+            <QuickBtn label="Last 7 Days" onClick={() => setQuickFilter("WEEK")} />
+            <QuickBtn label="This Month" onClick={() => setQuickFilter("MONTH")} />
+          </div>
+        </div>
       </div>
 
       {/* TABLE */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow border border-white/40 overflow-hidden">
+      <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow border border-white/40 overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-100 text-slate-600">
+          <thead className="bg-purple-600 text-white">
             <tr>
               <th className="text-left px-4 py-3">Assessment</th>
               <th>Type</th>
@@ -167,14 +310,9 @@ export default function StudentAssessments() {
 
           <tbody>
             {paginated.map((a) => (
-              <tr
-                key={a.id}
-                className="border-t hover:bg-white/80 transition"
-              >
+              <tr key={a.id} className="border-t hover:bg-purple-50 transition">
                 <td className="px-4 py-3">
-                  <div className="font-medium text-slate-800">
-                    {a.title}
-                  </div>
+                  <div className="font-medium text-slate-800">{a.title}</div>
                   <div className="text-xs text-slate-400">
                     {new Date(a.date).toDateString()} • {a.duration}
                   </div>
@@ -185,9 +323,11 @@ export default function StudentAssessments() {
                 <td className="text-center">
                   <StatusBadge status={a.status} />
                 </td>
+
                 <td className="text-center">
                   {a.score !== null ? `${a.score}%` : "--"}
                 </td>
+
                 <td className="px-4 py-3">
                   <Actions status={a.status} />
                 </td>
@@ -258,7 +398,7 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${s.bg} ${s.color}`}
+      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.color}`}
     >
       {s.icon}
       {status}
@@ -268,9 +408,7 @@ const StatusBadge = ({ status }) => {
 
 const Actions = ({ status }) => (
   <div className="flex justify-center gap-2">
-    {status === "Pending" && (
-      <ActionBtn icon={<FaPlayCircle />} />
-    )}
+    {status === "Pending" && <ActionBtn icon={<FaPlayCircle />} />}
     {status === "Completed" && (
       <>
         <ActionBtn icon={<FaEye />} />
@@ -290,5 +428,14 @@ const ActionBtn = ({ icon, outline }) => (
       }`}
   >
     {icon}
+  </button>
+);
+
+const QuickBtn = ({ label, onClick }) => (
+  <button
+    onClick={onClick}
+    className="px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 transition"
+  >
+    {label}
   </button>
 );

@@ -7,7 +7,7 @@ import {
 } from "react-icons/fa";
 
 /* =====================================================
-   STUDENT WEEKLY LEARNING GOALS – PRODUCTION READY
+   STUDENT WEEKLY LEARNING GOALS – TABLE FORMAT
 ===================================================== */
 
 export default function WeeklyLearningGoals() {
@@ -17,7 +17,6 @@ export default function WeeklyLearningGoals() {
   /* ================= INIT ================= */
 
   useEffect(() => {
-    // 🔹 Replace with API later
     setGoals([
       {
         id: 1,
@@ -89,7 +88,7 @@ export default function WeeklyLearningGoals() {
           Weekly Learning Goals
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          Plan your weekly learning and track your progress
+          Plan, track, and review your weekly learning objectives
         </p>
       </div>
 
@@ -108,12 +107,7 @@ export default function WeeklyLearningGoals() {
           />
           <button
             onClick={addGoal}
-            className="
-              flex items-center gap-2
-              px-4 py-2 rounded-xl
-              bg-indigo-600 hover:bg-indigo-700
-              text-white font-semibold
-            "
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
           >
             <FaPlus />
             Add
@@ -121,24 +115,71 @@ export default function WeeklyLearningGoals() {
         </div>
       </div>
 
-      {/* GOALS LIST */}
-      <div className="bg-white/70 rounded-2xl p-6 shadow border">
-        <h3 className="font-semibold text-slate-800 mb-4">
-          My Goals
-        </h3>
+      {/* TABLE */}
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow border overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead className="bg-slate-100 text-slate-600">
+            <tr>
+              <th className="px-6 py-4 text-left">Week</th>
+              <th className="px-6 py-4 text-left">Goal</th>
+              <th className="px-6 py-4 text-center">Status</th>
+              <th className="px-6 py-4 text-center">Action</th>
+            </tr>
+          </thead>
 
-        <div className="space-y-3">
-          {goals.map((g) => (
-            <GoalItem
-              key={g.id}
-              goal={g}
-              onToggle={() => toggleStatus(g.id)}
-            />
-          ))}
-        </div>
+          <tbody>
+            {goals.map((g) => (
+              <tr
+                key={g.id}
+                className="border-t hover:bg-slate-50 transition"
+              >
+                {/* WEEK */}
+                <td className="px-6 py-4 text-slate-600 flex items-center gap-2">
+                  <FaCalendarWeek className="text-indigo-600" />
+                  {g.week}
+                </td>
+
+                {/* TITLE */}
+                <td className="px-6 py-4 font-medium text-slate-800">
+                  {g.title}
+                </td>
+
+                {/* STATUS */}
+                <td className="px-6 py-4 text-center">
+                  <span
+                    className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+                      g.status === "Completed"
+                        ? "bg-emerald-100 text-emerald-600"
+                        : g.status === "In Progress"
+                        ? "bg-yellow-100 text-yellow-600"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {g.status === "Completed" ? (
+                      <FaCheckCircle />
+                    ) : (
+                      <FaClock />
+                    )}
+                    {g.status}
+                  </span>
+                </td>
+
+                {/* ACTION */}
+                <td className="px-6 py-4 text-center">
+                  <button
+                    onClick={() => toggleStatus(g.id)}
+                    className="text-indigo-600 font-semibold hover:underline text-sm"
+                  >
+                    Toggle Status
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
         {!goals.length && (
-          <p className="text-center text-sm text-slate-400">
+          <p className="text-center py-6 text-slate-400">
             No goals added yet
           </p>
         )}
@@ -146,45 +187,3 @@ export default function WeeklyLearningGoals() {
     </div>
   );
 }
-
-/* =====================================================
-   COMPONENTS
-===================================================== */
-
-const GoalItem = ({ goal, onToggle }) => (
-  <div
-    className="
-      flex justify-between items-center
-      px-4 py-3 rounded-xl
-      bg-white/80 border
-    "
-  >
-    <div>
-      <p className="font-medium text-slate-800">
-        {goal.title}
-      </p>
-      <p className="text-xs text-slate-500 flex items-center gap-1">
-        <FaCalendarWeek />
-        {goal.week}
-      </p>
-    </div>
-
-    <button
-      onClick={onToggle}
-      className={`flex items-center gap-2 text-sm font-semibold ${
-        goal.status === "Completed"
-          ? "text-emerald-600"
-          : goal.status === "In Progress"
-          ? "text-yellow-600"
-          : "text-slate-500"
-      }`}
-    >
-      {goal.status === "Completed" ? (
-        <FaCheckCircle />
-      ) : (
-        <FaClock />
-      )}
-      {goal.status}
-    </button>
-  </div>
-);

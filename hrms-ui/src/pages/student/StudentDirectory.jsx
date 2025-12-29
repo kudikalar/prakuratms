@@ -8,7 +8,7 @@ import {
 } from "react-icons/fa";
 
 /* =====================================================
-   STUDENT DIRECTORY – ENTERPRISE MASKED VIEW
+   STUDENT DIRECTORY – ENTERPRISE REFINED UI (NO REMOVALS)
 ===================================================== */
 
 export default function StudentDirectory() {
@@ -100,25 +100,29 @@ export default function StudentDirectory() {
 
   return (
     <div className="space-y-8 animate-fadeIn">
+
       {/* HEADER */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 shadow border">
-        <h2 className="text-2xl font-semibold text-slate-800">
+      <div className="bg-gradient-to-r from-purple-600/70 to-indigo-600/70 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-purple-200/40">
+        <h2 className="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
+          <FaUserGraduate className="opacity-80" />
           Student Directory
         </h2>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-purple-100 mt-1">
           Peer achievements and placement outcomes (privacy protected)
         </p>
       </div>
 
       {/* FILTER BAR */}
-      <div className="bg-white/70 rounded-2xl p-4 shadow border flex flex-wrap gap-4 items-center">
-        <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border">
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-5 shadow border flex flex-wrap gap-4 items-center">
+
+        {/* SEARCH INPUT */}
+        <div className="flex items-center gap-2 px-4 py-2 bg-white/90 rounded-xl border shadow-sm hover:shadow transition">
           <FaSearch className="text-slate-400" />
           <input
             placeholder="Search name, course, company..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="outline-none text-sm"
+            className="outline-none text-sm bg-transparent"
           />
         </div>
 
@@ -131,7 +135,7 @@ export default function StudentDirectory() {
         />
       </div>
 
-      {/* LIST */}
+      {/* STUDENTS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStudents.map((s) => (
           <StudentCard key={s.id} student={s} />
@@ -139,7 +143,7 @@ export default function StudentDirectory() {
       </div>
 
       {!filteredStudents.length && (
-        <p className="text-center text-sm text-slate-400">
+        <p className="text-center text-sm text-slate-400 mt-4">
           No matching students found
         </p>
       )}
@@ -148,15 +152,16 @@ export default function StudentDirectory() {
 }
 
 /* =====================================================
-   COMPONENTS
+   COMPONENTS (IMPROVED UI)
 ===================================================== */
 
 const StudentCard = ({ student }) => (
-  <div className="bg-white/70 rounded-2xl p-6 shadow border space-y-3">
+  <div className="bg-white/80 rounded-2xl p-6 shadow-lg border hover:shadow-xl transition-all cursor-pointer space-y-4">
+
     {/* BASIC INFO */}
     <div>
-      <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-        <FaUserGraduate />
+      <h3 className="font-semibold text-slate-800 flex items-center gap-2 text-lg">
+        <FaUserGraduate className="text-purple-600" />
         {student.name}
       </h3>
       <p className="text-sm text-slate-500">
@@ -165,20 +170,18 @@ const StudentCard = ({ student }) => (
     </div>
 
     {/* MASKED CONTACT */}
-    <div className="text-sm text-slate-600">
-      <p>Email: {maskEmail(student.email)}</p>
-      <p>Mobile: {maskMobile(student.mobile)}</p>
+    <div className="text-sm text-slate-600 space-y-1">
+      <p><strong>Email:</strong> {maskEmail(student.email)}</p>
+      <p><strong>Mobile:</strong> {maskMobile(student.mobile)}</p>
     </div>
 
-    {/* PLACEMENT */}
+    {/* PLACEMENT STATUS */}
     {student.placed ? (
-      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-1">
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 shadow-sm space-y-1">
         <p className="text-sm font-semibold text-emerald-700 flex items-center gap-1">
           <FaBuilding /> {student.company}
         </p>
-        <p className="text-xs text-slate-700">
-          Role: {student.role}
-        </p>
+        <p className="text-xs text-slate-700">Role: {student.role}</p>
         <p className="text-xs text-slate-700 flex items-center gap-1">
           <FaBriefcase /> {student.experience}
         </p>
@@ -187,7 +190,7 @@ const StudentCard = ({ student }) => (
         </p>
       </div>
     ) : (
-      <span className="inline-block text-xs px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">
+      <span className="inline-block text-xs px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold shadow-sm">
         Placement In Progress
       </span>
     )}
@@ -198,7 +201,7 @@ const Select = ({ value, onChange, options }) => (
   <select
     value={value}
     onChange={(e) => onChange(e.target.value)}
-    className="px-3 py-2 rounded-xl border bg-white text-sm"
+    className="px-4 py-2 rounded-xl border shadow-sm hover:shadow transition bg-white/90 text-sm"
   >
     {options.map((o) => (
       <option key={o} value={o}>

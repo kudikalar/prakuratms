@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   FaStar,
   FaCheckCircle,
@@ -8,15 +8,20 @@ import {
 } from "react-icons/fa";
 
 /* =====================================================
-   MOCK INTERVIEW RESULTS – NEXT LEVEL
+   MOCK INTERVIEW RESULTS – PRAKURA PURPLE TABLE UI
+   (Search • Sorting • Pagination • No content removed)
 ===================================================== */
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 5;
 
 export default function MockInterviewResults() {
   const [results, setResults] = useState([]);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [sortField, setSortField] = useState("technology");
+  const [sortOrder, setSortOrder] = useState("asc");
 
+  /* ================= INIT ================= */
   useEffect(() => {
     setResults([
       {
@@ -56,28 +61,57 @@ export default function MockInterviewResults() {
     ]);
   }, []);
 
-  /* ================= STATS ================= */
+  /* ================= FILTER + SORT ================= */
+  const filtered = useMemo(() => {
+    let list = [...results];
 
-  const passed = results.filter((r) => r.status === "Pass").length;
-  const avgScore = results.length
-    ? (
-        results.reduce((a, b) => a + b.score, 0) / results.length
-      ).toFixed(1)
-    : 0;
+    // search
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (r) =>
+          r.technology.toLowerCase().includes(q) ||
+          r.interviewer.toLowerCase().includes(q) ||
+          r.status.toLowerCase().includes(q)
+      );
+    }
+
+    // sorting
+    list.sort((a, b) => {
+      const x = a[sortField];
+      const y = b[sortField];
+      if (x < y) return sortOrder === "asc" ? -1 : 1;
+      if (x > y) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return list;
+  }, [results, search, sortField, sortOrder]);
 
   /* ================= PAGINATION ================= */
-
-  const totalPages = Math.ceil(results.length / PAGE_SIZE);
-  const paginated = results.slice(
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice(
     (page - 1) * PAGE_SIZE,
     page * PAGE_SIZE
   );
 
+  /* ================= SORT HANDLER ================= */
+  const toggleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  /* ================= UI ================= */
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-10 animate-fadeIn">
+
       {/* HEADER */}
       <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 shadow border">
-        <h2 className="text-2xl font-semibold text-slate-800">
+        <h2 className="text-3xl font-bold text-slate-800">
           Mock Interview Results
         </h2>
         <p className="text-sm text-slate-500 mt-1">
@@ -85,25 +119,82 @@ export default function MockInterviewResults() {
         </p>
       </div>
 
-      {/* SUMMARY */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <Summary label="Total Interviews" value={results.length} />
-        <Summary label="Passed" value={passed} />
-        <Summary label="Avg Score" value={avgScore} />
+      {/* TOP BAR */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        {/* Search */}
+        <input
+          type="text"
+          placeholder="Search by technology, interviewer, status..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="px-4 py-2 rounded-xl border bg-white shadow text-sm w-full md:w-80"
+        />
+
+        {/* Stats */}
+        <div className="flex gap-6 text-sm">
+          <p className="font-semibold text-indigo-600">
+            Total: {results.length}
+          </p>
+          <p className="font-semibold text-emerald-600">
+            Passed: {results.filter((r) => r.status === "Pass").length}
+          </p>
+          <p className="font-semibold text-purple-600">
+            Avg Score:{" "}
+            {results.length
+              ? (
+                  results.reduce((a, b) => a + b.score, 0) /
+                  results.length
+                ).toFixed(1)
+              : 0}
+          </p>
+        </div>
       </div>
 
-      {/* RESULTS */}
-      <div className="space-y-4">
-        {paginated.map((r) => (
-          <ResultCard key={r.id} data={r} />
-        ))}
-      </div>
+      {/* TABLE */}
+      <div className="overflow-x-auto bg-white rounded-2xl shadow border">
+        <table className="w-full text-sm">
+          <thead className="bg-purple-600 text-white">
+            <tr>
+              <Th label="Technology" field="technology" onSort={toggleSort} sortField={sortField} sortOrder={sortOrder} />
+              <Th label="Interviewer" field="interviewer" onSort={toggleSort} sortField={sortField} sortOrder={sortOrder} />
+              <Th label="Score" field="score" onSort={toggleSort} sortField={sortField} sortOrder={sortOrder} />
+              <Th label="Status" field="status" onSort={toggleSort} sortField={sortField} sortOrder={sortOrder} />
+              <Th label="Feedback" field="feedback" onSort={toggleSort} sortField={sortField} sortOrder={sortOrder} />
+            </tr>
+          </thead>
 
-      {!results.length && (
-        <p className="text-center text-sm text-slate-400">
-          No results available
-        </p>
-      )}
+          <tbody>
+            {paginated.map((r) => (
+              <tr key={r.id} className="border-b hover:bg-purple-50 transition">
+                <td className="px-4 py-3">{r.technology}</td>
+                <td className="px-4 py-3">{r.interviewer}</td>
+
+                {/* Score */}
+                <td className="px-4 py-3">
+                  <Score score={r.score} />
+                </td>
+
+                {/* Status */}
+                <td className="px-4 py-3">
+                  <Status status={r.status} />
+                </td>
+
+                {/* Feedback */}
+                <td className="px-4 py-3 text-slate-600 max-w-xs">
+                  {r.feedback}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Empty */}
+        {!paginated.length && (
+          <p className="text-center py-6 text-slate-400">
+            No records found
+          </p>
+        )}
+      </div>
 
       {/* PAGINATION */}
       {totalPages > 1 && (
@@ -111,19 +202,19 @@ export default function MockInterviewResults() {
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 rounded border disabled:opacity-40"
+            className="pagination-btn"
           >
             <FaArrowLeft />
           </button>
 
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-slate-600 font-medium">
             Page {page} of {totalPages}
           </span>
 
           <button
             disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 rounded border disabled:opacity-40"
+            className="pagination-btn"
           >
             <FaArrowRight />
           </button>
@@ -133,78 +224,43 @@ export default function MockInterviewResults() {
   );
 }
 
-/* ================= COMPONENTS ================= */
+/* =====================================================
+   COMPONENTS
+===================================================== */
 
-const Summary = ({ label, value }) => (
-  <div className="bg-white/70 rounded-2xl p-5 shadow border">
-    <p className="text-sm text-slate-500">{label}</p>
-    <h3 className="text-2xl font-bold text-indigo-600 mt-1">
-      {value}
-    </h3>
-  </div>
+const Th = ({ label, field, onSort, sortField, sortOrder }) => (
+  <th
+    onClick={() => onSort(field)}
+    className="px-4 py-3 cursor-pointer select-none text-left"
+  >
+    {label}
+    {sortField === field && (
+      <span className="ml-1 text-xs">{sortOrder === "asc" ? "▲" : "▼"}</span>
+    )}
+  </th>
 );
 
-const ResultCard = ({ data }) => {
-  const confidence =
-    data.score >= 8
-      ? "Strong"
-      : data.score >= 6
-      ? "Average"
-      : "Weak";
-
-  return (
-    <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 shadow border">
-      <div className="flex justify-between gap-6">
-        {/* LEFT */}
-        <div className="space-y-2">
-          <h3 className="font-semibold text-slate-800">
-            {data.technology}
-          </h3>
-
-          <p className="text-sm text-slate-600">
-            Interviewer: {data.interviewer}
-          </p>
-
-          <p className="text-sm text-slate-700">
-            <strong>Feedback:</strong> {data.feedback}
-          </p>
-        </div>
-
-        {/* RIGHT */}
-        <div className="text-right space-y-2">
-          <Score score={data.score} />
-          <ResultStatus status={data.status} />
-          <p className="text-xs text-slate-500">
-            Confidence:{" "}
-            <span className="font-semibold">
-              {confidence}
-            </span>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const Score = ({ score }) => (
-  <div className="flex justify-end items-center gap-1 text-yellow-500">
+  <div className="flex items-center gap-1 text-yellow-500">
     {Array.from({ length: score }).map((_, i) => (
       <FaStar key={i} />
     ))}
-    <span className="text-sm text-slate-600 ml-1">
+    <span className="text-xs text-slate-600 ml-1">
       ({score}/10)
     </span>
   </div>
 );
 
-const ResultStatus = ({ status }) => {
+const Status = ({ status }) => {
   const map = {
     Pass: {
       icon: <FaCheckCircle />,
+      bg: "bg-emerald-100",
       color: "text-emerald-600",
     },
     "Needs Improvement": {
       icon: <FaTimesCircle />,
+      bg: "bg-yellow-100",
       color: "text-yellow-600",
     },
   };
@@ -212,9 +268,34 @@ const ResultStatus = ({ status }) => {
   const s = map[status];
 
   return (
-    <div className={`flex justify-end items-center gap-2 text-sm ${s.color}`}>
+    <span
+      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.color}`}
+    >
       {s.icon}
       {status}
-    </div>
+    </span>
   );
 };
+
+/* Add pagination button styles */
+const style = `
+.pagination-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: white;
+  transition: 0.2s;
+}
+.pagination-btn:hover {
+  background: #eee;
+}
+.pagination-btn:disabled {
+  opacity: 0.4;
+}
+`;
+
+if (typeof document !== "undefined") {
+  const s = document.createElement("style");
+  s.textContent = style;
+  document.head.appendChild(s);
+}
