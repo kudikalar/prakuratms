@@ -1,21 +1,31 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
-  FaCalendarCheck,
   FaCheckCircle,
   FaTimesCircle,
   FaClock,
+  FaCalendarAlt,
   FaArrowUp,
   FaArrowDown,
-  FaExclamationTriangle,
-  FaFire,
-  FaInfoCircle,
 } from "react-icons/fa";
 
-/* =====================================================
-   STUDENT ATTENDANCE PAGE (ENTERPRISE | PRODUCTION)
-===================================================== */
+/* =========================================================================
+   STUDENT ATTENDANCE – PRAKURA PURPLE CORPORATE (ANIMATED PREMIUM EDITION)
+   ✔ Enhanced Glassmorphism
+   ✔ Smooth Animations
+   ✔ Hover Effects
+   ✔ Calendar Pop Animation
+========================================================================= */
 
 export default function StudentAttendance() {
+  const [month, setMonth] = useState("2025-01");
+  const [student] = useState({
+    name: "Ramesh Kumar",
+    email: "ramesh.kumar@prakura.com",
+    roll: "PKR1029",
+    batch: "Jan 2025",
+  });
+
+  const [records, setRecords] = useState([]);
   const [summary, setSummary] = useState({
     totalDays: 0,
     present: 0,
@@ -24,281 +34,252 @@ export default function StudentAttendance() {
     percentage: 0,
   });
 
-  const [records, setRecords] = useState([]);
-  const [month, setMonth] = useState("2025-01");
-
-  /* ================= INIT ================= */
-
+  /* ================= INIT MOCK DATA ================= */
   useEffect(() => {
-    // 🔹 Replace with API later
-    const mockRecords = [
+    const mock = [
       { date: "2025-01-02", status: "Present" },
       { date: "2025-01-03", status: "Present" },
       { date: "2025-01-04", status: "Absent" },
-      { date: "2025-01-05", status: "Present" },
-      { date: "2025-01-06", status: "Late" },
+      { date: "2025-01-05", status: "Late" },
+      { date: "2025-01-06", status: "Present" },
       { date: "2025-01-07", status: "Present" },
     ];
 
-    const present = mockRecords.filter(r => r.status === "Present").length;
-    const absent = mockRecords.filter(r => r.status === "Absent").length;
-    const late = mockRecords.filter(r => r.status === "Late").length;
-    const totalDays = mockRecords.length;
-    const percentage = totalDays
-      ? Math.round((present / totalDays) * 100)
-      : 0;
+    const present = mock.filter(x => x.status === "Present").length;
+    const absent = mock.filter(x => x.status === "Absent").length;
+    const late = mock.filter(x => x.status === "Late").length;
+    const totalDays = mock.length;
 
-    setRecords(mockRecords);
+    setRecords(mock);
     setSummary({
       totalDays,
       present,
       absent,
       late,
-      percentage,
+      percentage: totalDays ? Math.round((present / totalDays) * 100) : 0,
     });
   }, [month]);
 
-  /* ================= DERIVED ================= */
+  /* ================= UTILS ================= */
+  const initials = (name) =>
+    name.split(" ").map((n) => n[0]).join("").toUpperCase();
 
-  const eligible = summary.percentage >= 75;
+  const generateCalendar = useMemo(() => {
+    const [year, m] = month.split("-");
+    const date = new Date(year, m - 1, 1);
 
-  const trend = summary.percentage >= 75 ? "UP" : "DOWN";
-
-  const riskLevel =
-    summary.percentage >= 85
-      ? "SAFE"
-      : summary.percentage >= 75
-      ? "WARNING"
-      : "RISK";
-
-  const streak = useMemo(() => {
-    let count = 0;
-    for (let i = records.length - 1; i >= 0; i--) {
-      if (records[i].status === "Present") count++;
-      else break;
+    let days = [];
+    while (date.getMonth() === Number(m) - 1) {
+      days.push({
+        date: new Date(date),
+        status:
+          records.find(
+            (r) => r.date === date.toISOString().split("T")[0]
+          )?.status || "NA",
+      });
+      date.setDate(date.getDate() + 1);
     }
-    return count;
-  }, [records]);
+    return days;
+  }, [month, records]);
 
-  /* ================= UI ================= */
+  /* ================= STATUS COLORS ================= */
+  const statusStyles = {
+    Present:
+      "bg-emerald-100 text-emerald-700 border-emerald-300 shadow-lg shadow-emerald-200/30 animate-softPop",
+    Absent:
+      "bg-red-100 text-red-700 border-red-300 shadow-lg shadow-red-200/30 animate-softPop",
+    Late:
+      "bg-yellow-100 text-yellow-700 border-yellow-300 shadow-lg shadow-yellow-200/30 animate-softPop",
+    NA: "bg-slate-100 text-slate-500 border-slate-300",
+  };
 
+  /* ================= UI ================== */
   return (
-    <div className="space-y-8 animate-fadeIn">
-      {/* HEADER */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 shadow border border-white/40">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold text-slate-800">
-              Attendance
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              Track daily attendance, trends & eligibility
-            </p>
-          </div>
+    <div className="space-y-8 animate-fadeInSlow">
 
-          {/* MONTH FILTER */}
+      {/* STUDENT HEADER CARD */}
+      <div
+        className="
+        bg-white/20 backdrop-blur-2xl border border-white/30 
+        rounded-3xl p-6 shadow-[0_0_40px_rgba(80,0,160,0.2)]
+        flex flex-col md:flex-row items-center gap-6
+        animate-slideUp
+      "
+      >
+        {/* Avatar */}
+        <div
+          className="
+          w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-bold
+          bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-2xl
+          border border-white/30
+        "
+        >
+          {initials(student.name)}
+        </div>
+
+        {/* Details */}
+        <div className="flex-1">
+          <h2 className="text-2xl font-bold text-slate-900 drop-shadow-sm">
+            {student.name}
+          </h2>
+
+          <p className="text-sm text-slate-600">{student.email}</p>
+
+          <div className="flex gap-6 text-sm mt-2 text-slate-700">
+            <span>Roll: <strong>{student.roll}</strong></span>
+            <span>Batch: <strong>{student.batch}</strong></span>
+          </div>
+        </div>
+
+        {/* Month Picker */}
+        <div className="animate-popIn">
           <input
             type="month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="px-4 py-2 rounded-xl border bg-white text-sm"
+            className="
+              px-4 py-2 rounded-xl border shadow-lg 
+              bg-white/40 backdrop-blur-md 
+              focus:ring-2 focus:ring-purple-400
+            "
           />
         </div>
       </div>
 
       {/* SUMMARY CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-        <Stat label="Total Days" value={summary.totalDays} />
-        <Stat label="Present" value={summary.present} />
-        <Stat label="Absent" value={summary.absent} />
-        <Stat label="Late" value={summary.late} />
-        <Stat
-          label="Attendance %"
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
+        <AnimatedSummary
+          label="Present"
+          value={summary.present}
+          icon={<FaCheckCircle />}
+          color="emerald"
+          delay="100ms"
+        />
+
+        <AnimatedSummary
+          label="Absent"
+          value={summary.absent}
+          icon={<FaTimesCircle />}
+          color="red"
+          delay="200ms"
+        />
+
+        <AnimatedSummary
+          label="Late"
+          value={summary.late}
+          icon={<FaClock />}
+          color="yellow"
+          delay="300ms"
+        />
+
+        <AnimatedSummary
+          label="Overall %"
           value={`${summary.percentage}%`}
-          highlight
+          icon={<FaCalendarAlt />}
+          color="purple"
+          delay="400ms"
         />
       </div>
 
-      {/* INSIGHTS ROW */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* ELIGIBILITY */}
-        <GlassInfo
-          icon={eligible ? <FaCheckCircle /> : <FaExclamationTriangle />}
-          title={eligible ? "Eligible" : "Not Eligible"}
-          subtitle={
-            eligible
-              ? "Eligible for exams & placements"
-              : "Attendance below 75%"
-          }
-          color={eligible ? "emerald" : "red"}
-        />
-
-        {/* STREAK */}
-        <GlassInfo
-          icon={<FaFire />}
-          title={`${streak} Day Streak`}
-          subtitle="Continuous presence"
-          color="orange"
-        />
-
-        {/* RISK */}
-        <GlassInfo
-          icon={<FaInfoCircle />}
-          title={
-            riskLevel === "SAFE"
-              ? "Safe Zone"
-              : riskLevel === "WARNING"
-              ? "Warning Zone"
-              : "Risk Zone"
-          }
-          subtitle="Attendance health"
-          color={
-            riskLevel === "SAFE"
-              ? "emerald"
-              : riskLevel === "WARNING"
-              ? "yellow"
-              : "red"
-          }
-        />
-      </div>
-
-      {/* ELIGIBILITY BANNER */}
+      {/* HEALTH BAR */}
       <div
-        className={`
-          flex items-center gap-3 p-5 rounded-2xl shadow
-          border border-white/40
-          ${eligible ? "bg-emerald-50" : "bg-red-50"}
-        `}
+        className="
+        bg-white/20 backdrop-blur-2xl border border-white/30 shadow-xl 
+        p-6 rounded-3xl animate-slideUp delay-300
+      "
       >
-        {eligible ? (
-          <>
-            <FaCheckCircle className="text-emerald-600 text-xl" />
-            <span className="text-sm font-semibold text-emerald-700">
-              Eligible for Exams & Placements
-            </span>
-          </>
-        ) : (
-          <>
-            <FaExclamationTriangle className="text-red-600 text-xl" />
-            <span className="text-sm font-semibold text-red-700">
-              Attendance below 75% – Immediate improvement required
-            </span>
-          </>
-        )}
-
-        <span className="ml-auto flex items-center gap-1 text-xs text-slate-600">
-          {trend === "UP" ? (
-            <>
-              <FaArrowUp className="text-emerald-600" /> Improving
-            </>
-          ) : (
-            <>
-              <FaArrowDown className="text-red-600" /> Needs Improvement
-            </>
-          )}
-        </span>
-      </div>
-
-      {/* TABLE */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 shadow border border-white/40">
         <h3 className="font-semibold text-slate-800 mb-4">
-          Attendance Records
+          Attendance Health
         </h3>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500 border-b">
-                <th className="py-2">Date</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.map((r, i) => (
-                <tr
-                  key={i}
-                  className="border-b last:border-0 hover:bg-white/60"
-                >
-                  <td className="py-3 text-slate-700">
-                    {new Date(r.date).toDateString()}
-                  </td>
-                  <td>
-                    <StatusBadge status={r.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-3 rounded-full bg-slate-300/40 overflow-hidden">
+            <div
+              className="
+              h-full bg-gradient-to-r from-emerald-500 to-purple-600
+              animate-growBar 
+            "
+              style={{ width: `${summary.percentage}%` }}
+            />
+          </div>
+
+          <span className="text-sm text-slate-700">
+            {summary.percentage >= 75 ? (
+              <span className="flex items-center gap-1 text-emerald-600 animate-pulseSlow">
+                <FaArrowUp /> Good
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-red-600 animate-pulseSlow">
+                <FaArrowDown /> Low
+              </span>
+            )}
+          </span>
+        </div>
+      </div>
+
+      {/* CALENDAR VIEW */}
+      <div
+        className="
+        bg-white/20 backdrop-blur-2xl border border-white/30 
+        shadow-2xl rounded-3xl p-6 animate-slideUp delay-500
+      "
+      >
+        <h3 className="font-semibold text-slate-800 mb-6">
+          Attendance Calendar
+        </h3>
+
+        <div className="grid grid-cols-7 text-center text-xs font-semibold text-slate-600 mb-3">
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+            <div key={d} className="animate-fadeIn">{d}</div>
+          ))}
         </div>
 
-        {!records.length && (
-          <p className="text-sm text-slate-400 text-center mt-4">
-            No attendance data available
-          </p>
-        )}
+        <div className="grid grid-cols-7 gap-3 text-center">
+          {generateCalendar.map((day, idx) => (
+            <div
+              key={idx}
+              className={`
+                p-3 rounded-xl border text-xs
+                transition transform hover:scale-[1.07]
+                duration-300 cursor-pointer
+                ${statusStyles[day.status]}
+              `}
+            >
+              <p className="font-bold">{day.date.getDate()}</p>
+              <p className="text-[10px]">{day.status}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-/* =====================================================
-   COMPONENTS
-===================================================== */
-
-const Stat = ({ label, value, highlight }) => (
-  <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-5 shadow border border-white/40">
-    <p className="text-sm text-slate-500">{label}</p>
-    <h3
-      className={`text-2xl font-bold mt-1 ${
-        highlight ? "text-emerald-600" : "text-slate-800"
-      }`}
-    >
-      {value}
-    </h3>
-  </div>
-);
-
-const GlassInfo = ({ icon, title, subtitle, color }) => (
-  <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-5 shadow border border-white/40">
-    <div className={`text-${color}-600 text-xl mb-1`}>
-      {icon}
-    </div>
-    <p className="font-semibold text-slate-800">{title}</p>
-    <p className="text-xs text-slate-500">{subtitle}</p>
-  </div>
-);
-
-const StatusBadge = ({ status }) => {
-  const map = {
-    Present: {
-      icon: <FaCheckCircle />,
-      color: "text-emerald-600",
-      bg: "bg-emerald-100",
-    },
-    Absent: {
-      icon: <FaTimesCircle />,
-      color: "text-red-600",
-      bg: "bg-red-100",
-    },
-    Late: {
-      icon: <FaClock />,
-      color: "text-yellow-600",
-      bg: "bg-yellow-100",
-    },
+/* =========================================================================
+   SUMMARY CARD (Animated)
+========================================================================= */
+const AnimatedSummary = ({ label, value, icon, color, delay }) => {
+  const colors = {
+    emerald: "text-emerald-600 bg-emerald-100 border-emerald-300",
+    red: "text-red-600 bg-red-100 border-red-300",
+    yellow: "text-yellow-600 bg-yellow-100 border-yellow-300",
+    purple: "text-purple-600 bg-purple-100 border-purple-300",
   };
 
-  const s = map[status];
-
   return (
-    <span
+    <div
       className={`
-        inline-flex items-center gap-2
-        px-3 py-1 rounded-full text-xs font-medium
-        ${s.bg} ${s.color}
+        bg-white/20 backdrop-blur-xl border border-white/30 
+        p-6 shadow-xl rounded-3xl
+        flex flex-col gap-2 animate-slideUp
       `}
+      style={{ animationDelay: delay }}
     >
-      {s.icon}
-      {status}
-    </span>
+      <span className={`text-lg ${colors[color]} p-2 rounded-xl inline-block w-fit shadow`}>
+        {icon}
+      </span>
+      <p className="text-sm text-slate-600">{label}</p>
+      <h3 className="text-2xl font-bold text-slate-900">{value}</h3>
+    </div>
   );
 };

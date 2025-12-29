@@ -2,6 +2,36 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
+/* ================= HELPERS ================= */
+
+const signAccessToken = (user) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET not configured");
+  }
+
+  return jwt.sign(
+    {
+      id: user._id,
+      role: user.role,
+      email: user.email,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
+};
+
+const signRefreshToken = (user) => {
+  if (!process.env.JWT_REFRESH_SECRET) {
+    throw new Error("JWT_REFRESH_SECRET not configured");
+  }
+
+  return jwt.sign(
+    { id: user._id },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: "7d" }
+  );
+};
+
 /* ================= LOGIN ================= */
 
 const loginByRole = async (req, res, expectedRole) => {
@@ -10,53 +40,64 @@ const loginByRole = async (req, res, expectedRole) => {
 
     if (!email || !password) {
       return res.status(400).json({
-        message: "Email and password are required"
+        success: false,
+        message: "Email and password are required",
       });
     }
 
     const user = await User.findOne({
       email,
       role: expectedRole,
-      isActive: true
-    });
+      isActive: true,
+    }).select("+password");
 
     if (!user) {
       return res.status(401).json({
-        message: "Invalid credentials"
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    if (!user.password) {
+      return res.status(500).json({
+        success: false,
+        message: "Password not loaded from database",
       });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
-        message: "Invalid credentials"
+        success: false,
+        message: "Invalid credentials",
       });
     }
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+    const accessToken = signAccessToken(user);
+    const refreshToken = signRefreshToken(user);
 
-    return res.json({
+    return res.status(200).json({
       success: true,
-      token,
+      token: accessToken,
+      refreshToken,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
-
   } catch (err) {
-    console.error("Login error:", err);
-    return res.status(500).json({ message: "Server error" });
+    console.error("🔥 LOGIN ERROR:", err.message);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Server error",
+    });
   }
 };
 
-/* 👇 THESE EXPORT NAMES MUST MATCH ROUTES 👇 */
+/* ROLE-BASED LOGIN EXPORTS */
 export const adminLogin = (req, res) =>
   loginByRole(req, res, "ADMIN");
 
@@ -74,24 +115,27 @@ const createUserByRole = async (req, res, role) => {
 
     if (!name || !email || !password) {
       return res.status(400).json({
-        message: "Name, email and password are required"
+        success: false,
+        message: "Name, email and password are required",
       });
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({
-        message: "User already exists"
+        success: false,
+        message: "User already exists",
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
-      role
+      role,
+      isActive: true,
     });
 
     return res.status(201).json({
@@ -101,17 +145,20 @@ const createUserByRole = async (req, res, role) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
+  } catch (err) {
+    console.error("🔥 CREATE USER ERROR:", err.message);
 
-  } catch (error) {
-    console.error("Create user error:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Server error",
+    });
   }
 };
 
-/* 👇 THESE EXPORT NAMES MUST MATCH ROUTES 👇 */
+/* ROLE-BASED CREATE EXPORTS */
 export const createAdmin = (req, res) =>
   createUserByRole(req, res, "ADMIN");
 

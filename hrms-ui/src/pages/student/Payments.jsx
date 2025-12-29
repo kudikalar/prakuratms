@@ -9,7 +9,8 @@ import {
 } from "react-icons/fa";
 
 /* =====================================================
-   STUDENT PAYMENTS – PREMIUM
+   STUDENT PAYMENTS – PRAKURA PURPLE PREMIUM TABLE VIEW
+   (Default Table View + Glass UI + No content removed)
 ===================================================== */
 
 export default function StudentPayments() {
@@ -25,7 +26,6 @@ export default function StudentPayments() {
   /* ================= INIT ================= */
 
   useEffect(() => {
-    // 🔹 Replace with API later
     const mockPayments = [
       {
         id: 1,
@@ -54,6 +54,7 @@ export default function StudentPayments() {
       (sum, p) => sum + p.amount,
       0
     );
+
     const paid = mockPayments
       .filter((p) => p.status === "Paid")
       .reduce((sum, p) => sum + p.amount, 0);
@@ -82,11 +83,12 @@ export default function StudentPayments() {
   /* ================= UI ================= */
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-10 animate-fadeIn">
+
       {/* HEADER */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 shadow border border-white/40">
-        <h2 className="text-2xl font-semibold text-slate-800 flex items-center gap-2">
-          <FaMoneyBillWave />
+      <div className="bg-white/60 backdrop-blur-2xl rounded-3xl p-6 shadow-xl border border-white/40">
+        <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
+          <FaMoneyBillWave className="text-purple-600" />
           Payments
         </h2>
         <p className="text-sm text-slate-500 mt-1">
@@ -113,14 +115,15 @@ export default function StudentPayments() {
       </div>
 
       {/* PAYMENT PROGRESS */}
-      <div className="bg-white/70 rounded-2xl p-6 shadow border">
+      <div className="bg-white/60 backdrop-blur-xl rounded-3xl p-6 shadow-lg border border-white/40">
         <div className="flex justify-between text-sm text-slate-600 mb-2">
           <span>Payment Completion</span>
           <span>{progress}%</span>
         </div>
-        <div className="h-3 rounded-full bg-slate-200">
+
+        <div className="h-3 rounded-full bg-slate-200 overflow-hidden">
           <div
-            className="h-full rounded-full bg-indigo-600 transition-all"
+            className="h-full rounded-full bg-purple-600 transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -134,7 +137,7 @@ export default function StudentPayments() {
             onClick={() => setFilter(f)}
             className={`px-4 py-1.5 rounded-full text-xs font-semibold transition ${
               filter === f
-                ? "bg-indigo-600 text-white"
+                ? "bg-purple-600 text-white shadow"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
@@ -143,60 +146,61 @@ export default function StudentPayments() {
         ))}
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 shadow border border-white/40">
-        <h3 className="font-semibold text-slate-800 mb-4">
-          Payment History
-        </h3>
+      {/* TABLE VIEW (Default) */}
+      <div className="overflow-x-auto rounded-3xl shadow-xl border border-purple-200 bg-white">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-purple-600 text-white">
+              <th className="p-4 text-left">Date</th>
+              <th className="p-4 text-left">Amount</th>
+              <th className="p-4 text-left">Status</th>
+              <th className="p-4 text-left">Mode</th>
+              <th className="p-4 text-right">Action</th>
+            </tr>
+          </thead>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500 border-b">
-                <th className="py-2">Date</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Mode</th>
-                <th>Action</th>
+          <tbody>
+            {filteredPayments.map((p) => (
+              <tr
+                key={p.id}
+                className="border-b hover:bg-purple-50 transition"
+              >
+                <td className="p-4">
+                  {new Date(p.date).toDateString()}
+                </td>
+
+                <td className="p-4 font-medium">
+                  ₹{p.amount.toLocaleString()}
+                </td>
+
+                <td className="p-4">
+                  <StatusBadge status={p.status} />
+                </td>
+
+                <td className="p-4">{p.mode}</td>
+
+                <td className="p-4 text-right">
+                  {p.status === "Paid" ? (
+                    <button className="text-indigo-600 hover:underline flex items-center gap-1">
+                      <FaFileInvoice />
+                      Invoice
+                    </button>
+                  ) : p.status === "Pending" ? (
+                    <button className="flex items-center gap-1 text-emerald-600 hover:underline">
+                      <FaCreditCard />
+                      Pay Now
+                    </button>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredPayments.map((p) => (
-                <tr
-                  key={p.id}
-                  className="border-b last:border-0 hover:bg-white/60"
-                >
-                  <td className="py-3">
-                    {new Date(p.date).toDateString()}
-                  </td>
-                  <td>₹{p.amount.toLocaleString()}</td>
-                  <td>
-                    <StatusBadge status={p.status} />
-                  </td>
-                  <td>{p.mode}</td>
-                  <td>
-                    {p.status === "Paid" ? (
-                      <button className="text-indigo-600 hover:underline flex items-center gap-1">
-                        <FaFileInvoice />
-                        Invoice
-                      </button>
-                    ) : p.status === "Pending" ? (
-                      <button className="flex items-center gap-1 text-emerald-600 hover:underline">
-                        <FaCreditCard />
-                        Pay Now
-                      </button>
-                    ) : (
-                      <span className="text-slate-400">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
 
         {!filteredPayments.length && (
-          <p className="text-sm text-slate-400 text-center mt-4">
+          <p className="text-sm text-slate-400 text-center py-4">
             No payment records available
           </p>
         )}
@@ -210,7 +214,7 @@ export default function StudentPayments() {
 ===================================================== */
 
 const Stat = ({ label, value, highlight, danger }) => (
-  <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-5 shadow border border-white/40">
+  <div className="bg-white/60 backdrop-blur-xl rounded-3xl p-5 shadow-lg border border-white/40 hover:shadow-xl transition">
     <p className="text-sm text-slate-500">{label}</p>
     <h3
       className={`text-2xl font-bold mt-1 ${
@@ -218,7 +222,7 @@ const Stat = ({ label, value, highlight, danger }) => (
           ? "text-emerald-600"
           : danger
           ? "text-red-600"
-          : "text-slate-800"
+          : "text-purple-600"
       }`}
     >
       {value}
@@ -230,18 +234,18 @@ const StatusBadge = ({ status }) => {
   const map = {
     Paid: {
       icon: <FaCheckCircle />,
-      color: "text-emerald-600",
-      bg: "bg-emerald-100",
+      color: "text-emerald-700",
+      bg: "bg-emerald-100 border border-emerald-300/50 shadow",
     },
     Pending: {
       icon: <FaClock />,
-      color: "text-yellow-600",
-      bg: "bg-yellow-100",
+      color: "text-yellow-700",
+      bg: "bg-yellow-100 border border-yellow-300/50 shadow",
     },
     Upcoming: {
       icon: <FaTimesCircle />,
       color: "text-slate-600",
-      bg: "bg-slate-200",
+      bg: "bg-slate-200 border border-slate-400/40 shadow",
     },
   };
 
@@ -249,11 +253,7 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`
-        inline-flex items-center gap-2
-        px-3 py-1 rounded-full text-xs font-medium
-        ${s.bg} ${s.color}
-      `}
+      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.color}`}
     >
       {s.icon}
       {status}

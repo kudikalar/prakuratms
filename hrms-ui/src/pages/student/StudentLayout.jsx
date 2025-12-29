@@ -18,7 +18,6 @@ export default function StudentLayout() {
   const [hideHeader, setHideHeader] = useState(false);
 
   /* ================= USER ================= */
-
   const user = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("user")) || {};
@@ -31,13 +30,9 @@ export default function StudentLayout() {
 
   const logout = useCallback(() => {
     localStorage.clear();
-    navigate("/login", { replace: true });
-  }, [navigate]);
+    window.location.replace("/#/login"); // HashRouter safe
+  }, []);
 
-  /**
-   * 🔥 Correct sidebar open
-   * Sidebar owns state
-   */
   const openSidebar = useCallback(() => {
     window.dispatchEvent(
       new CustomEvent("OPEN_ADMIN_SIDEBAR", { bubbles: true })
@@ -86,19 +81,21 @@ export default function StudentLayout() {
   /* ================= UI ================= */
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-100 to-indigo-100">
+    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50 to-slate-100">
+
       {/* SIDEBAR */}
       <AdminSidebar />
 
       {/* MAIN */}
       <div className="flex flex-col flex-1 overflow-hidden relative">
+
         {/* HEADER */}
         <header
           className={`
             shrink-0 flex items-center justify-between
             px-4 md:px-8 py-4
-            bg-white/70 backdrop-blur-xl
-            border-b border-white/40
+            bg-white/80 backdrop-blur-2xl
+            border-b border-slate-200 shadow-sm
             z-30
             transition-transform duration-300
             ${hideHeader ? "-translate-y-full md:translate-y-0" : ""}
@@ -111,12 +108,12 @@ export default function StudentLayout() {
               onClick={openSidebar}
               className="
                 md:hidden p-2 rounded-full
-                bg-white/80 border border-white/60
-                hover:bg-indigo-100 transition
+                bg-white/90 border border-slate-300
+                hover:bg-indigo-100 transition shadow-sm
               "
               aria-label="Open sidebar"
             >
-              <FaBars className="text-indigo-700" />
+              <FaBars className="text-indigo-700 text-lg" />
             </button>
 
             <div>
@@ -129,20 +126,35 @@ export default function StudentLayout() {
             </div>
           </div>
 
-          {/* RIGHT */}
+          {/* RIGHT – DESKTOP LOGOUT */}
           <button
             onClick={logout}
             className="
-              hidden sm:flex items-center gap-2
+              hidden md:flex items-center gap-2
               px-4 py-2 rounded-full
               bg-gradient-to-r from-red-500 to-pink-500
               hover:from-red-600 hover:to-pink-600
               text-white text-sm font-semibold
-              shadow transition
+              shadow-lg hover:shadow-xl transition
             "
           >
             <FaSignOutAlt />
             Logout
+          </button>
+
+          {/* ✅ RIGHT – MOBILE LOGOUT (FIXED) */}
+          <button
+            onClick={logout}
+            className="
+              md:hidden flex items-center gap-2
+              px-3 py-1.5 rounded-full
+              bg-red-500 hover:bg-red-600
+              text-white text-sm font-semibold
+              shadow-md transition
+            "
+            aria-label="Logout"
+          >
+            <FaSignOutAlt />
           </button>
         </header>
 
@@ -157,10 +169,10 @@ export default function StudentLayout() {
         <nav
           className="
             md:hidden fixed bottom-0 inset-x-0 z-40
-            bg-white/80 backdrop-blur-xl
-            border-t border-white/40
+            bg-white/90 backdrop-blur-xl
+            border-t border-slate-200
             flex justify-around items-center
-            h-14
+            h-14 shadow-lg
           "
         >
           <BottomItem
@@ -188,6 +200,7 @@ export default function StudentLayout() {
             onClick={() => navigate("/student/profile")}
           />
         </nav>
+
       </div>
     </div>
   );
@@ -198,11 +211,12 @@ export default function StudentLayout() {
 const BottomItem = ({ icon, label, active, onClick }) => (
   <button
     onClick={onClick}
-    className={`flex flex-col items-center text-xs transition ${
-      active ? "text-indigo-600 font-semibold" : "text-slate-500"
-    }`}
+    className={`
+      flex flex-col items-center text-xs transition-all duration-200
+      ${active ? "text-indigo-600 font-semibold scale-110" : "text-slate-500"}
+    `}
   >
-    <span className="text-lg">{icon}</span>
+    <span className="text-lg mb-0.5">{icon}</span>
     {label}
   </button>
 );

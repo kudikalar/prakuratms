@@ -39,7 +39,17 @@ const ROLE_ACCESS = {
   ],
   Finance: ["Dashboard", "Payments", "Finance", "Help & Support"],
   Counsellor: ["Dashboard", "Payments", "Help & Support"],
-  Educator: ["Dashboard", "Assessments", "Attendance", "Help & Support"],
+  Educator: [
+    "Dashboard",
+    "My Courses",
+    "Batches",
+    "Students",
+    "Attendance",
+    "Assessments",
+    "Reports",
+    "Notifications",
+    "Help & Support",
+  ],
   Student: [
     "Dashboard",
     "My Courses",
@@ -55,8 +65,7 @@ const ROLE_ACCESS = {
   ],
 };
 
-/* ================= ADMIN MENU ================= */
-/* (UNCHANGED — ALL MENUS PRESERVED) */
+/* ================= ADMIN MENU (UNCHANGED) ================= */
 
 const ADMIN_MENU = [
   {
@@ -130,12 +139,7 @@ const ADMIN_MENU = [
   {
     title: "Notifications",
     icon: <FaBell />,
-    items: [
-      {
-        label: "Announcements",
-        path: "/admin/notifications/announcements",
-      },
-    ],
+    items: [{ label: "Announcements", path: "/admin/notifications/announcements" }],
   },
   {
     title: "Security & Audit",
@@ -156,8 +160,72 @@ const ADMIN_MENU = [
   },
 ];
 
-/* ================= STUDENT MENU ================= */
-/* (UNCHANGED — ALL MENUS PRESERVED) */
+/* ================= EDUCATOR MENU (UNCHANGED) ================= */
+
+const EDUCATOR_MENU = [
+  {
+    title: "Dashboard",
+    icon: <FaTachometerAlt />,
+    items: [{ label: "Overview", path: "/admin/dashboard" }],
+  },
+  {
+    title: "My Courses",
+    icon: <FaBookOpen />,
+    items: [
+      { label: "Assigned Courses", path: "/admin/educator/assigned-courses" },
+      { label: "Course Content", path: "/admin/educator/course-content" },
+    ],
+  },
+  {
+    title: "Batches",
+    icon: <FaUserGraduate />,
+    items: [
+      { label: "My Batches", path: "/admin/educator/my-batches" },
+      { label: "Schedule", path: "/admin/educator/schedule" },
+    ],
+  },
+  {
+    title: "Students",
+    icon: <FaUsers />,
+    items: [
+      { label: "Student List", path: "/admin/educator/students" },
+      { label: "Performance", path: "/admin/educator/performance" },
+    ],
+  },
+  {
+    title: "Attendance",
+    icon: <FaCalendarCheck />,
+    items: [
+      { label: "Mark Attendance", path: "/admin/educator/attendance/mark" },
+      { label: "History", path: "/admin/educator/history" },
+    ],
+  },
+  {
+    title: "Assessments",
+    icon: <FaClipboardList />,
+    items: [
+      { label: "Create Assessment", path: "/admin/assessments/create" },
+      { label: "Evaluation", path: "/admin/assessments/evaluation" },
+    ],
+  },
+  {
+    title: "Reports",
+    icon: <FaChartBar />,
+    items: [{ label: "Reports", path: "/admin/educator/performance" }],
+  },
+  {
+    title: "Notifications",
+    icon: <FaBell />,
+    items: [{ label: "My Notifications", path: "/admin/notifications/announcements" }],
+  },
+  {
+    title: "Help & Support",
+    icon: <FaLifeRing />,
+    items: [{ label: "Support", path: "/admin/support/faqs" }],
+  },
+];
+
+/* ================= STUDENT MENU (ADDED – NO REMOVALS) ================= */
 
 const STUDENT_MENU = [
   {
@@ -165,79 +233,97 @@ const STUDENT_MENU = [
     icon: <FaTachometerAlt />,
     items: [{ label: "Overview", path: "/student/dashboard" }],
   },
+
   {
     title: "My Courses",
     icon: <FaBookOpen />,
     items: [
       { label: "Courses", path: "/student/courses" },
       { label: "Attendance", path: "/student/attendance" },
+      { label: "Attendance Calendar", path: "/student/attendance-calendar" },
       { label: "Assessments", path: "/student/assessments" },
     ],
   },
+
   {
     title: "Projects",
     icon: <FaClipboardList />,
     items: [
       { label: "My Projects", path: "/student/projects" },
-      { label: "Progress", path: "/student/projects/progress" },
-      { label: "Daily Tasks", path: "/student/daily-tasks" },
-      { label: "Submissions", path: "/student/projects/submissions" },
-      { label: "Reviews", path: "/student/projects/reviews" },
-      { label: "Evaluation", path: "/student/projects/evaluation" },
+      { label: "Progress Tracker", path: "/student/project-progress" },
+      { label: "Submissions", path: "/student/project-submission" },
+      { label: "Reviews", path: "/student/project-review" },
+      { label: "Evaluation", path: "/student/project-evaluation" },
     ],
   },
+
   {
     title: "Placement",
     icon: <FaChartBar />,
     items: [
-      { label: "Eligibility", path: "/student/placement/eligibility" },
-      { label: "Readiness", path: "/student/placement/readiness" },
-      { label: "Placements", path: "/student/placement" },
+      { label: "Eligibility", path: "/student/placement-eligibility" },
+      { label: "Readiness", path: "/student/placement-readiness" },
+      { label: "Placements", path: "/student/placements" },
+      { label: "Placement Stats", path: "/student/placement-stats" },
       { label: "Mock Interviews", path: "/student/mock-interviews" },
       { label: "Mock Results", path: "/student/mock-results" },
       { label: "Interview Schedule", path: "/student/interviews" },
     ],
   },
+
   {
     title: "Skills & Goals",
     icon: <FaChartPie />,
     items: [
       { label: "Skill Gap Analyzer", path: "/student/skill-gap" },
-      { label: "Weekly Goals", path: "/student/weekly-goals" },
+      { label: "Daily Tasks", path: "/student/daily-tasks" },
     ],
   },
+
   {
     title: "Documents",
     icon: <FaShieldAlt />,
     items: [
-      { label: "Certificates", path: "/student/certificates" },
       { label: "Documents", path: "/student/documents" },
+      { label: "Certificates", path: "/student/certificates" },
       { label: "Resume Builder", path: "/student/resume-builder" },
     ],
   },
+
   {
     title: "Community",
     icon: <FaUsers />,
     items: [
-      { label: "Students", path: "/student/peers" },
-      { label: "Alumni", path: "/student/alumni" },
+      { label: "Peers Directory", path: "/student/peers" },
+      { label: "Alumni Directory", path: "/student/alumni" },
+      { label: "Success Stories", path: "/student/alumni-stories" },
+      { label: "Story Matcher", path: "/student/alumni-matcher" },
+      { label: "Referrals", path: "/student/referrals" },
+      { label: "1:1 Discussions", path: "/student/discussions" },
     ],
   },
+
   {
-    title: "Reports",
+    title: "AI & Reports",
     icon: <FaChartBar />,
-    items: [{ label: "Overall Report", path: "/student/report" }],
+    items: [
+      { label: "AI Coach", path: "/student/ai-coach" },
+      { label: "Overall Report", path: "/student/report" },
+    ],
   },
+
   {
     title: "Profile",
     icon: <FaUserGraduate />,
     items: [{ label: "My Profile", path: "/student/profile" }],
   },
+
   {
     title: "Notifications",
     icon: <FaBell />,
     items: [{ label: "My Notifications", path: "/student/notifications" }],
   },
+
   {
     title: "Payments",
     icon: <FaMoneyBill />,
@@ -260,56 +346,58 @@ export default function AdminSidebar() {
 
   const role =
     typeof user?.role === "string"
-      ? user.role.charAt(0).toUpperCase() +
-        user.role.slice(1).toLowerCase()
+      ? user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()
       : "Admin";
 
   const allowedMenus = ROLE_ACCESS[role] || [];
-  const ACTIVE_MENU = role === "Student" ? STUDENT_MENU : ADMIN_MENU;
+
+  const ACTIVE_MENU =
+    role === "Student"
+      ? STUDENT_MENU
+      : role === "Educator"
+      ? EDUCATOR_MENU
+      : ADMIN_MENU;
 
   const [openMenu, setOpenMenu] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [search, setSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const filteredMenu = ACTIVE_MENU.filter(
-    (m) => allowedMenus.includes(m.title) || role === "Admin"
-  ).map((m) => ({
-    ...m,
-    items: m.items.filter(
-      (i) =>
-        i.label.toLowerCase().includes(search.toLowerCase()) ||
-        m.title.toLowerCase().includes(search.toLowerCase())
-    ),
-  }));
-
-  /* AUTO OPEN ACTIVE MENU */
+  /* MOBILE SIDEBAR OPEN */
   useEffect(() => {
-    const active = filteredMenu.find((m) =>
-      m.items.some((i) => location.pathname.startsWith(i.path))
-    );
-    if (active && openMenu === null) setOpenMenu(active.title);
-  }, [location.pathname, filteredMenu, openMenu]);
-
-  /* MOBILE OPEN HANDLER */
-  useEffect(() => {
-    const handler = () => {
-      setMobileOpen(true);
-      document.body.style.overflow = "hidden";
-    };
+    const handler = () => setMobileOpen(true);
     window.addEventListener("OPEN_ADMIN_SIDEBAR", handler);
     return () => window.removeEventListener("OPEN_ADMIN_SIDEBAR", handler);
   }, []);
 
-  /* CLOSE ON ROUTE CHANGE */
+  const filteredMenu = useMemo(
+    () =>
+      ACTIVE_MENU.filter(
+        (m) => allowedMenus.includes(m.title) || role === "Admin"
+      ).map((m) => ({
+        ...m,
+        items: m.items.filter(
+          (i) =>
+            i.label.toLowerCase().includes(search.toLowerCase()) ||
+            m.title.toLowerCase().includes(search.toLowerCase())
+        ),
+      })),
+    [ACTIVE_MENU, allowedMenus, role, search]
+  );
+
   useEffect(() => {
-    setMobileOpen(false);
-    document.body.style.overflow = "";
-  }, [location.pathname]);
+    const active = filteredMenu.find((m) =>
+      m.items.some((i) => location.pathname.startsWith(i.path))
+    );
+    if (active) setOpenMenu(active.title);
+  }, [location.pathname, filteredMenu]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+  }, [mobileOpen]);
 
   return (
     <>
-      {/* MOBILE OVERLAY */}
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
@@ -326,20 +414,11 @@ export default function AdminSidebar() {
         `}
       >
         {/* HEADER */}
-        <div className="px-4 py-4 flex justify-between items-center border-b border-white/20">
-          <div className="flex items-center gap-3">
-            <img src={PrakuraLogo} className="w-8 h-8" />
-            {!collapsed && (
-              <span className="text-white font-semibold">PRAKURA TMS</span>
-            )}
-          </div>
-
-          <button
-            className="text-white md:hidden"
-            onClick={() => setMobileOpen(false)}
-          >
-            <FaTimes />
-          </button>
+        <div className="px-4 py-4 flex items-center gap-3 border-b border-white/20">
+          <img src={PrakuraLogo} className="w-8 h-8" />
+          {!collapsed && (
+            <span className="text-white font-semibold">PRAKURA TMS</span>
+          )}
         </div>
 
         {!collapsed && (

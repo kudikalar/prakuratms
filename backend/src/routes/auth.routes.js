@@ -1,13 +1,11 @@
 import express from "express";
-
-/* 👇 THESE NAMES MUST MATCH CONTROLLER EXPORTS 👇 */
 import {
   adminLogin,
   educatorLogin,
   studentLogin,
   createAdmin,
   createEducator,
-  createStudent
+  createStudent,
 } from "../controllers/auth.controller.js";
 
 const router = express.Router();

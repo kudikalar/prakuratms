@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   FaUserTie,
   FaCalendarAlt,
@@ -9,14 +9,33 @@ import {
   FaVideo,
   FaRedo,
   FaClipboardCheck,
+  FaStar,
+  FaThLarge,
+  FaTable,
+  FaSearch,
+  FaArrowLeft,
+  FaArrowRight,
 } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 /* =====================================================
-   STUDENT MOCK INTERVIEWS – NEXT LEVEL
+   STUDENT MOCK INTERVIEWS – ENTERPRISE PREMIUM EDITION
+   • Card View + Prakura Purple Table View
+   • Sorting + Pagination + Search
+   • Glass UI v3 + Smooth Animations
 ===================================================== */
 
 export default function MockInterviews() {
   const [interviews, setInterviews] = useState([]);
+  const [view, setView] = useState("card"); // card | table
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("date");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 5;
+
+  const navigate = useNavigate();
+
+  /* ================= INIT ================= */
 
   useEffect(() => {
     setInterviews([
@@ -48,17 +67,40 @@ export default function MockInterviews() {
     ]);
   }, []);
 
-  const grouped = {
-    Scheduled: interviews.filter((i) => i.status === "Scheduled"),
-    Completed: interviews.filter((i) => i.status === "Completed"),
-    Missed: interviews.filter((i) => i.status === "Missed"),
-  };
+  /* ================= FILTER + SORT ================= */
+
+  const filtered = useMemo(() => {
+    return interviews
+      .filter(
+        (i) =>
+          i.technology.toLowerCase().includes(search.toLowerCase()) ||
+          i.interviewer.toLowerCase().includes(search.toLowerCase())
+      )
+      .sort((a, b) => {
+        if (sortBy === "date")
+          return new Date(b.date) - new Date(a.date);
+        if (sortBy === "score")
+          return (b.score || 0) - (a.score || 0);
+        return 0;
+      });
+  }, [interviews, search, sortBy]);
+
+  /* ================= PAGINATION ================= */
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
+
+  /* ================= UI ================= */
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-10 animate-fadeIn">
+
       {/* HEADER */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 shadow border">
-        <h2 className="text-2xl font-semibold text-slate-800">
+      <div className="bg-white/60 backdrop-blur-2xl rounded-3xl p-6 shadow-xl border border-white/40">
+        <h2 className="text-3xl font-bold text-slate-800">
           Mock Interviews
         </h2>
         <p className="text-sm text-slate-500 mt-1">
@@ -66,56 +108,173 @@ export default function MockInterviews() {
         </p>
       </div>
 
-      {/* SUMMARY */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <SummaryCard label="Scheduled" value={grouped.Scheduled.length} />
-        <SummaryCard label="Completed" value={grouped.Completed.length} />
-        <SummaryCard label="Missed" value={grouped.Missed.length} />
+      {/* ACTION BAR */}
+      <div className="flex flex-wrap justify-between items-center gap-4">
+
+        {/* Search */}
+        <div className="flex items-center gap-2 bg-white/70 px-4 py-2 rounded-xl border shadow">
+          <FaSearch className="text-slate-400" />
+          <input
+            placeholder="Search interviewer or technology..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="outline-none text-sm bg-transparent"
+          />
+        </div>
+
+        {/* Sort */}
+        <select
+          className="px-4 py-2 rounded-xl border bg-white shadow text-sm"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="date">Sort by Date</option>
+          <option value="score">Sort by Score</option>
+        </select>
+
+        {/* View Toggle */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setView("card")}
+            className={`px-4 py-2 rounded-xl border shadow flex items-center gap-2 ${
+              view === "card"
+                ? "bg-purple-600 text-white"
+                : "bg-white text-slate-700"
+            }`}
+          >
+            <FaThLarge /> Card View
+          </button>
+
+          <button
+            onClick={() => setView("table")}
+            className={`px-4 py-2 rounded-xl border shadow flex items-center gap-2 ${
+              view === "table"
+                ? "bg-purple-600 text-white"
+                : "bg-white text-slate-700"
+            }`}
+          >
+            <FaTable /> Table View
+          </button>
+        </div>
       </div>
 
-      {/* SECTIONS */}
-      {Object.entries(grouped).map(
-        ([status, list]) =>
-          list.length > 0 && (
-            <div key={status} className="space-y-4">
-              <h3 className="font-semibold text-slate-800">
-                {status} Interviews
-              </h3>
-              {list.map((i) => (
-                <InterviewCard key={i.id} data={i} />
-              ))}
-            </div>
-          )
+      {/* TABLE VIEW */}
+      {view === "table" && (
+        <PurpleTable
+          data={paginated}
+          navigate={navigate}
+        />
       )}
 
-      {!interviews.length && (
+      {/* CARD VIEW */}
+      {view === "card" && (
+        <div className="space-y-6">
+          {paginated.map((i) => (
+            <InterviewCard key={i.id} data={i} navigate={navigate} />
+          ))}
+        </div>
+      )}
+
+      {!filtered.length && (
         <p className="text-center text-sm text-slate-400">
-          No mock interviews scheduled
+          No matching interview records
         </p>
+      )}
+
+      {/* PAGINATION */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-5 pt-3">
+          <button
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="pagination-btn"
+          >
+            <FaArrowLeft />
+          </button>
+
+          <span className="text-sm text-slate-600 font-medium">
+            Page {page} of {totalPages}
+          </span>
+
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="pagination-btn"
+          >
+            <FaArrowRight />
+          </button>
+        </div>
       )}
     </div>
   );
 }
 
-/* ================= COMPONENTS ================= */
+/* =====================================================
+   PURPLE TABLE VIEW
+===================================================== */
 
-const SummaryCard = ({ label, value }) => (
-  <div className="bg-white/70 rounded-2xl p-5 shadow border">
-    <p className="text-sm text-slate-500">{label}</p>
-    <h3 className="text-2xl font-bold text-indigo-600 mt-1">
-      {value}
-    </h3>
-  </div>
-);
+function PurpleTable({ data, navigate }) {
+  return (
+    <div className="overflow-x-auto rounded-3xl shadow-xl border border-purple-200 bg-white">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="bg-purple-600 text-white text-left">
+            <th className="p-4">Technology</th>
+            <th className="p-4">Interviewer</th>
+            <th className="p-4">Date</th>
+            <th className="p-4">Time</th>
+            <th className="p-4">Score</th>
+            <th className="p-4">Status</th>
+            <th className="p-4 text-right">Actions</th>
+          </tr>
+        </thead>
 
-const InterviewCard = ({ data }) => (
-  <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 shadow border space-y-3">
+        <tbody>
+          {data.map((i) => (
+            <tr
+              key={i.id}
+              className="border-b hover:bg-purple-50 transition"
+            >
+              <td className="p-4 font-medium">{i.technology}</td>
+              <td className="p-4">{i.interviewer}</td>
+              <td className="p-4">
+                {new Date(i.date).toDateString()}
+              </td>
+              <td className="p-4">{i.time}</td>
+              <td className="p-4">{i.score ? `${i.score}/10` : "-"}</td>
+
+              <td className="p-4">
+                <StatusBadge status={i.status} />
+              </td>
+
+              <td className="p-4 text-right">
+                <TableActions item={i} navigate={navigate} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* =====================================================
+   CARD VIEW (GLASS)
+===================================================== */
+
+const InterviewCard = ({ data, navigate }) => (
+  <div
+    className="
+      bg-white/60 backdrop-blur-2xl rounded-3xl p-6 shadow-xl 
+      border border-white/40 hover:shadow-2xl hover:-translate-y-1 
+      transition-all duration-300 space-y-4
+    "
+  >
     <div className="flex justify-between items-start gap-4">
-      {/* LEFT */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <FaUserTie className="text-indigo-600" />
-          <h3 className="font-semibold text-slate-800">
+          <FaUserTie className="text-indigo-600 text-lg" />
+          <h3 className="font-bold text-slate-800 text-lg">
             {data.technology}
           </h3>
         </div>
@@ -124,10 +283,9 @@ const InterviewCard = ({ data }) => (
           Interviewer: {data.interviewer}
         </p>
 
-        <p className="text-xs text-slate-400 mt-2 flex items-center gap-3">
+        <p className="text-xs text-slate-500 mt-2 flex items-center gap-3">
           <span className="flex items-center gap-1">
-            <FaCalendarAlt />{" "}
-            {new Date(data.date).toDateString()}
+            <FaCalendarAlt /> {new Date(data.date).toDateString()}
           </span>
           <span className="flex items-center gap-1">
             <FaClock /> {data.time}
@@ -135,57 +293,91 @@ const InterviewCard = ({ data }) => (
         </p>
 
         {data.score && (
-          <p className="text-xs text-emerald-600 mt-2">
+          <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+            <FaStar className="text-yellow-500" />
             Score: {data.score} / 10
           </p>
         )}
       </div>
 
-      {/* RIGHT */}
       <StatusBadge status={data.status} />
     </div>
 
-    {/* ACTIONS */}
+    {/* Action Buttons */}
     <div className="flex justify-end gap-3 pt-2">
-      {data.status === "Scheduled" && (
-        <Action icon={<FaVideo />} label="Prepare / Join" />
-      )}
-      {data.status === "Completed" && (
-        <Action
-          icon={<FaClipboardCheck />}
-          label="View Feedback"
-        />
-      )}
-      {data.status === "Missed" && (
-        <Action icon={<FaRedo />} label="Request Reattempt" />
-      )}
+      <TableActions item={data} navigate={navigate} />
     </div>
   </div>
 );
 
-const Action = ({ icon, label }) => (
-  <button className="flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:underline">
+/* =====================================================
+   ACTIONS (SHARED)
+===================================================== */
+
+function TableActions({ item, navigate }) {
+  return (
+    <>
+      {item.status === "Scheduled" && (
+        <Action
+          icon={<FaVideo />}
+          label="Prepare / Join"
+          onClick={() => navigate(`/student/mock/prepare/${item.id}`)}
+        />
+      )}
+
+      {item.status === "Completed" && (
+        <Action
+          icon={<FaClipboardCheck />}
+          label="View Feedback"
+          onClick={() => navigate(`/student/mock/feedback/${item.id}`)}
+        />
+      )}
+
+      {item.status === "Missed" && (
+        <Action
+          icon={<FaRedo />}
+          label="Request Reattempt"
+          onClick={() => navigate(`/student/mock/reattempt/${item.id}`)}
+        />
+      )}
+    </>
+  );
+}
+
+const Action = ({ icon, label, onClick }) => (
+  <button
+    onClick={onClick}
+    className="
+      flex items-center gap-2 text-sm font-semibold text-indigo-600 
+      hover:text-purple-600 hover:underline transition
+    "
+  >
     {icon}
     {label}
   </button>
 );
 
+/* =====================================================
+   STATUS BADGE
+===================================================== */
+
 const StatusBadge = ({ status }) => {
   const map = {
     Scheduled: {
       icon: <FaHourglassHalf />,
-      color: "text-yellow-600",
-      bg: "bg-yellow-100",
+      color: "text-yellow-700",
+      bg: "bg-yellow-100/80 border border-yellow-300/50 shadow",
+      pulse: "animate-pulse",
     },
     Completed: {
       icon: <FaCheckCircle />,
-      color: "text-emerald-600",
-      bg: "bg-emerald-100",
+      color: "text-emerald-700",
+      bg: "bg-emerald-100/80 border border-emerald-300/50 shadow",
     },
     Missed: {
       icon: <FaTimesCircle />,
-      color: "text-red-600",
-      bg: "bg-red-100",
+      color: "text-red-700",
+      bg: "bg-red-100/80 border border-red-300/50 shadow",
     },
   };
 
@@ -193,10 +385,29 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${s.bg} ${s.color}`}
+      className={`
+        inline-flex items-center gap-2 px-3 py-1 rounded-full 
+        text-xs font-semibold ${s.bg} ${s.color} ${s.pulse || ""}
+      `}
     >
       {s.icon}
       {status}
     </span>
   );
 };
+
+/* =====================================================
+   EXTRA CSS
+===================================================== */
+
+const customStyles = `
+.pagination-btn {
+  @apply px-3 py-2 rounded-xl bg-white/80 border border-white/60 backdrop-blur-xl shadow hover:bg-purple-100 disabled:opacity-40 transition;
+}
+`;
+
+if (typeof document !== "undefined") {
+  const style = document.createElement("style");
+  style.textContent = customStyles;
+  document.head.appendChild(style);
+}
