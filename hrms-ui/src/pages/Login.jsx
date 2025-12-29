@@ -238,18 +238,26 @@ export default function Login() {
   ==================================================================== */
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-300/30 via-white to-purple-200/40 flex flex-col">
+   <div className="min-h-screen bg-gradient-to-br from-purple-300/30 via-white to-purple-200/40 flex flex-col">
 
-      {/* HEADER */}
-      <header className="flex justify-center py-10">
-        <div className="bg-white/60 px-10 py-4 rounded-2xl backdrop-blur-xl border border-purple-300/40 shadow-xl flex flex-col items-center">
-          <img src={logo} className="w-14 h-14 mb-2 drop-shadow" />
-          <h1 className="text-2xl font-bold text-slate-800">
-            <span className="text-purple-700 font-extrabold">PRAKURA</span> TMS
-          </h1>
-          <p className="text-slate-500 text-sm">Training Management System</p>
-        </div>
-      </header>
+  {/* HEADER */}
+  <header className="flex justify-center py-4">
+    <div className="bg-white/60 px-6 py-2 rounded-xl backdrop-blur-xl border border-purple-300/40 shadow-lg flex flex-col items-center">
+      
+      <img src={logo} className="w-8 h-8 mb-1 drop-shadow" />
+
+      <h1 className="text-lg font-bold text-slate-800 leading-tight">
+        <span className="text-purple-700 font-extrabold">PRAKURA</span> TMS
+      </h1>
+
+      <p className="text-[11px] text-slate-500">
+        Training Management System
+      </p>
+
+    </div>
+  </header>
+
+
 
       {/* MAIN */}
 
@@ -455,20 +463,51 @@ export default function Login() {
         </Modal>
       )}
 
-      {/* FOOTER */}
-      <footer className="w-full py-8 mt-8 flex flex-col items-center gap-5">
-        <div className="flex gap-8 text-2xl">
-          <a href="https://facebook.com/prakuraitsolutions" target="_blank" className="text-[#1877F2] hover:scale-110 transition"><FaFacebook /></a>
-          <a href="https://instagram.com/prakuraitsolutions" target="_blank" className="text-[#E4405F] hover:scale-110 transition"><FaInstagram /></a>
-          <a href="https://youtube.com/prakuraitsolutions" target="_blank" className="text-[#FF0000] hover:scale-110 transition"><FaYoutube /></a>
-          <a href="https://wa.me/1234567890" target="_blank" className="text-[#25D366] hover:scale-110 transition"><FaWhatsapp /></a>
-          <a href="https://linkedin.com/company/prakuraitsolutions" target="_blank" className="text-[#0A66C2] hover:scale-110 transition"><FaLinkedin /></a>
-        </div>
+    {/* FOOTER */}
+<footer className="w-full py-3 flex flex-col items-center gap-3">
+  <div className="flex gap-6 text-xl">
+    <a
+      href="https://facebook.com/prakuraitsolutions"
+      target="_blank"
+      className="text-[#1877F2] hover:scale-110 transition"
+    >
+      <FaFacebook />
+    </a>
+    <a
+      href="https://instagram.com/prakuraitsolutions"
+      target="_blank"
+      className="text-[#E4405F] hover:scale-110 transition"
+    >
+      <FaInstagram />
+    </a>
+    <a
+      href="https://youtube.com/prakuraitsolutions"
+      target="_blank"
+      className="text-[#FF0000] hover:scale-110 transition"
+    >
+      <FaYoutube />
+    </a>
+    <a
+      href="https://wa.me/1234567890"
+      target="_blank"
+      className="text-[#25D366] hover:scale-110 transition"
+    >
+      <FaWhatsapp />
+    </a>
+    <a
+      href="https://linkedin.com/company/prakuraitsolutions"
+      target="_blank"
+      className="text-[#0A66C2] hover:scale-110 transition"
+    >
+      <FaLinkedin />
+    </a>
+  </div>
 
-        <p className="text-sm text-slate-600">
-          © {new Date().getFullYear()} Prakura IT Solutions — All rights reserved.
-        </p>
-      </footer>
+  <p className="text-xs text-slate-600">
+    © {new Date().getFullYear()} Prakura IT Solutions — All rights reserved.
+  </p>
+</footer>
+
 
       {toast && <Toast {...toast} />}
     </div>

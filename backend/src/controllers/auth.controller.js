@@ -2,39 +2,18 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-/* ================= HELPERS ================= */
+/* ================= TOKEN ================= */
 
-const signAccessToken = (user) => {
-  if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET not configured");
-  }
-
-  return jwt.sign(
-    {
-      id: user._id,
-      role: user.role,
-      email: user.email,
-    },
+const signToken = (user) =>
+  jwt.sign(
+    { id: user._id, role: user.role, email: user.email },
     process.env.JWT_SECRET,
     { expiresIn: "1d" }
   );
-};
-
-const signRefreshToken = (user) => {
-  if (!process.env.JWT_REFRESH_SECRET) {
-    throw new Error("JWT_REFRESH_SECRET not configured");
-  }
-
-  return jwt.sign(
-    { id: user._id },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: "7d" }
-  );
-};
 
 /* ================= LOGIN ================= */
 
-const loginByRole = async (req, res, expectedRole) => {
+const loginByRole = async (req, res, role) => {
   try {
     const { email, password } = req.body;
 
@@ -47,49 +26,24 @@ const loginByRole = async (req, res, expectedRole) => {
 
     const user = await User.findOne({
       email,
-      role: expectedRole,
+      role,
       isActive: true,
     }).select("+password");
 
-    if (!user) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
       });
     }
-
-    if (!user.password) {
-      return res.status(500).json({
-        success: false,
-        message: "Password not loaded from database",
-      });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
-    }
-
-    const accessToken = signAccessToken(user);
-    const refreshToken = signRefreshToken(user);
 
     return res.status(200).json({
       success: true,
-      token: accessToken,
-      refreshToken,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      message: "Login successful",
+      token: signToken(user),
+      user,
     });
   } catch (err) {
-    console.error("🔥 LOGIN ERROR:", err.message);
-
     return res.status(500).json({
       success: false,
       message: err.message || "Server error",
@@ -97,15 +51,9 @@ const loginByRole = async (req, res, expectedRole) => {
   }
 };
 
-/* ROLE-BASED LOGIN EXPORTS */
-export const adminLogin = (req, res) =>
-  loginByRole(req, res, "ADMIN");
-
-export const educatorLogin = (req, res) =>
-  loginByRole(req, res, "EDUCATOR");
-
-export const studentLogin = (req, res) =>
-  loginByRole(req, res, "STUDENT");
+export const adminLogin = (req, res) => loginByRole(req, res, "ADMIN");
+export const educatorLogin = (req, res) => loginByRole(req, res, "EDUCATOR");
+export const studentLogin = (req, res) => loginByRole(req, res, "STUDENT");
 
 /* ================= CREATE USERS ================= */
 
@@ -116,24 +64,21 @@ const createUserByRole = async (req, res, role) => {
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Name, email and password are required",
+        message: "All fields are required",
       });
     }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (await User.findOne({ email })) {
       return res.status(409).json({
         success: false,
         message: "User already exists",
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
-
     const user = await User.create({
       name,
       email,
-      password: hashedPassword,
+      password: await bcrypt.hash(password, 12),
       role,
       isActive: true,
     });
@@ -141,16 +86,9 @@ const createUserByRole = async (req, res, role) => {
     return res.status(201).json({
       success: true,
       message: "User created successfully",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user,
     });
   } catch (err) {
-    console.error("🔥 CREATE USER ERROR:", err.message);
-
     return res.status(500).json({
       success: false,
       message: err.message || "Server error",
@@ -158,12 +96,137 @@ const createUserByRole = async (req, res, role) => {
   }
 };
 
-/* ROLE-BASED CREATE EXPORTS */
 export const createAdmin = (req, res) =>
   createUserByRole(req, res, "ADMIN");
-
 export const createEducator = (req, res) =>
   createUserByRole(req, res, "EDUCATOR");
-
 export const createStudent = (req, res) =>
   createUserByRole(req, res, "STUDENT");
+
+/* ================= ADMIN MANAGEMENT ================= */
+
+export const getAllUsers = async (req, res) => {
+  const { role } = req.query;
+  const users = await User.find(role ? { role } : {}).select("-password");
+
+  res.json({
+    success: true,
+    message: "Users fetched successfully",
+    users,
+  });
+};
+
+export const getUserById = async (req, res) => {
+  const user = await User.findById(req.params.id).select("-password");
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  res.json({
+    success: true,
+    message: "User fetched successfully",
+    user,
+  });
+};
+
+export const updateUser = async (req, res) => {
+  const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+  });
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  res.json({
+    success: true,
+    message: "User updated successfully",
+    user,
+  });
+};
+
+export const toggleUserStatus = async (req, res) => {
+  const { isActive } = req.body;
+
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { isActive },
+    { new: true }
+  );
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  res.json({
+    success: true,
+    message: `User ${isActive ? "activated" : "deactivated"} successfully`,
+  });
+};
+
+
+/* ================= CREATE COURSE ================= */
+export const createCourse = async (req, res) => {
+  try {
+    const { title, category } = req.body;
+
+    if (!title || !category) {
+      return res.status(400).json({
+        success: false,
+        message: "Title and category are required",
+      });
+    }
+
+    const course = await Course.create(req.body);
+
+    return res.status(201).json({
+      success: true,
+      message: "Course created successfully",
+      course,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Failed to create course",
+    });
+  }
+};
+
+/* ================= UPDATE COURSE ================= */
+export const updateCourse = async (req, res) => {
+  try {
+    const course = await Course.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Course updated successfully",
+      course,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Failed to update course",
+    });
+  }
+};
