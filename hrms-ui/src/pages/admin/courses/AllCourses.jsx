@@ -5,72 +5,108 @@ import ConfirmModal from "../../../components/ConfirmModal";
 import Toast from "../../../components/Toast";
 
 /* =====================================================
-   COMPONENT
+   ALL COURSES – STATUS BASED (UPCOMING / ONGOING / COMPLETED)
+   (PRODUCTION READY – DATE FREE)
 ===================================================== */
+
+/* ===== STATUS HELPER ===== */
+const getCourseStatus = (course) => {
+  return course?.status || "ONGOING";
+};
+
+/* ===== NORMALIZERS ===== */
+const safeText = (val) => (val && String(val).trim() ? val : "—");
+const safePrice = (val) =>
+  typeof val === "number" && val >= 0 ? `₹${val}` : "—";
 
 export default function AllCourses() {
   const [courses, setCourses] = useState([]);
   const [confirmId, setConfirmId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "" });
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("ONGOING");
 
   const navigate = useNavigate();
 
-  /* ================= LOAD ================= */
+  /* ================= LOAD COURSES ================= */
   useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem("courses")) || [];
-      setCourses(stored);
-    } catch {
-      setCourses([]);
-    }
+    const fetchCourses = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await fetch(
+          "http://localhost:5000/api/auth/admin/courses",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (!res.ok) throw new Error("Failed to fetch");
+
+        const data = await res.json();
+        setCourses(Array.isArray(data.courses) ? data.courses : []);
+      } catch {
+        setToast({ show: true, message: "❌ Failed to load courses" });
+        setCourses([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourses();
   }, []);
 
-  /* ================= GROUP BY CATEGORY ================= */
-  const groupedCourses = useMemo(() => {
-    const map = {};
-    courses.forEach((c) => {
-      const category = c.category || "Uncategorized";
-      if (!map[category]) map[category] = [];
-      map[category].push(c);
-    });
+  /* ================= GROUP BY STATUS ================= */
+  const coursesByStatus = useMemo(
+    () => ({
+      UPCOMING: courses.filter((c) => getCourseStatus(c) === "UPCOMING"),
+      ONGOING: courses.filter((c) => getCourseStatus(c) === "ONGOING"),
+      COMPLETED: courses.filter((c) => getCourseStatus(c) === "COMPLETED"),
+    }),
+    [courses]
+  );
 
-    Object.keys(map).forEach((k) =>
-      map[k].sort((a, b) => a.title.localeCompare(b.title))
-    );
+  /* ================= DELETE COURSE ================= */
+  const deleteCourse = async () => {
+    try {
+      const token = localStorage.getItem("token");
 
-    return map;
-  }, [courses]);
+      const res = await fetch(
+        `http://localhost:5000/api/auth/admin/courses/${confirmId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-  /* ================= DELETE ================= */
-  const deleteCourse = () => {
-    const updated = courses.filter((c) => c.id !== confirmId);
-    setCourses(updated);
-    localStorage.setItem("courses", JSON.stringify(updated));
+      if (!res.ok) throw new Error();
 
-    setToast({ show: true, message: "🗑️ Course deleted successfully" });
-    setConfirmId(null);
-
-    setTimeout(() => setToast({ show: false, message: "" }), 2500);
+      setCourses((prev) => prev.filter((c) => c._id !== confirmId));
+      setToast({ show: true, message: "🗑️ Course deleted successfully" });
+    } catch {
+      setToast({ show: true, message: "❌ Failed to delete course" });
+    } finally {
+      setConfirmId(null);
+      setTimeout(() => setToast({ show: false, message: "" }), 2500);
+    }
   };
 
   /* ================= UI ================= */
   return (
     <div
       className="
-        max-w-7xl mx-auto space-y-10 animate-fadeIn
+        max-w-7xl mx-auto space-y-8 animate-fadeIn
         bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
         rounded-[32px] p-6 md:p-8
         shadow-[0_40px_120px_rgba(80,70,200,0.25)]
       "
     >
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">
-            All Courses
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-800">Courses</h2>
           <p className="text-sm text-slate-600">
-            Manage and organize training programs
+            Manage courses by lifecycle status
           </p>
         </div>
 
@@ -87,67 +123,109 @@ export default function AllCourses() {
         </NavLink>
       </div>
 
-      {/* ================= EMPTY STATE ================= */}
-      {courses.length === 0 && (
+      {/* STATUS TABS */}
+      <div className="flex gap-4 flex-wrap">
+        {["UPCOMING", "ONGOING", "COMPLETED"].map((status) => (
+          <button
+            key={status}
+            onClick={() => setActiveTab(status)}
+            className={`px-5 py-2 rounded-full font-semibold transition ${
+              activeTab === status
+                ? "bg-indigo-600 text-white shadow-lg"
+                : "bg-white/70 text-slate-600 hover:bg-white"
+            }`}
+          >
+            {status} ({coursesByStatus[status].length})
+          </button>
+        ))}
+      </div>
+
+      {/* CONTENT */}
+      {loading && (
+        <GlassCard>
+          <p className="text-center text-slate-600">Loading courses...</p>
+        </GlassCard>
+      )}
+
+      {!loading && coursesByStatus[activeTab].length === 0 && (
         <GlassCard>
           <p className="text-center text-slate-600">
-            No courses found. Click <strong>Add Course</strong> to get started.
+            No {activeTab.toLowerCase()} courses found.
           </p>
         </GlassCard>
       )}
 
-      {/* ================= CATEGORY ROWS ================= */}
-      {Object.entries(groupedCourses).map(([category, list]) => (
-        <div key={category} className="space-y-4">
-          <h3 className="text-lg font-semibold text-purple-700">
-            {category}
-          </h3>
+      {!loading && coursesByStatus[activeTab].length > 0 && (
+        <GlassCard className="p-0 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-white/70 text-slate-700">
+                <tr>
+                  <th className="px-4 py-3 text-left">Title</th>
+                  <th className="px-4 py-3 text-left">Category</th>
+                  <th className="px-4 py-3 text-center">Duration</th>
+                  <th className="px-4 py-3 text-center">Level</th>
+                  <th className="px-4 py-3 text-center">Mode</th>
+                  <th className="px-4 py-3 text-center">Price</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
 
-          {/* HORIZONTAL SCROLL ROW */}
-          <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
-            {list.map((course) => (
-              <GlassCard
-                key={course.id}
-                hover
-                className="min-w-[320px] max-w-[360px] flex-shrink-0"
-              >
-                <div className="flex flex-col justify-between h-full gap-4">
-                  <div>
-                    <h4 className="font-semibold text-slate-800">
+              <tbody>
+                {coursesByStatus[activeTab].map((course) => (
+                  <tr
+                    key={course._id}
+                    className="border-t hover:bg-white/50 transition"
+                  >
+                    <td className="px-4 py-3 font-semibold text-slate-800">
                       {course.title}
-                    </h4>
-                    <p className="text-sm text-slate-600 mt-1">
-                      Duration: {course.duration || "—"}
-                    </p>
-                  </div>
+                    </td>
 
-                  <div className="flex justify-end gap-3">
-                    <IconBtn
-                      onClick={() =>
-                        navigate(`/admin/courses/add?id=${course.id}`)
-                      }
-                    >
-                      <FaEdit />
-                    </IconBtn>
+                    <td className="px-4 py-3 text-slate-600">
+                      {safeText(course.category)}
+                    </td>
 
-                    <IconBtn
-                      danger
-                      onClick={() => setConfirmId(course.id)}
-                    >
-                      <FaTrash />
-                    </IconBtn>
-                  </div>
-                </div>
-              </GlassCard>
-            ))}
+                    <td className="px-4 py-3 text-center">
+                      {safeText(course.duration)}
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
+                      {safeText(course.level)}
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
+                      {safeText(course.mode)}
+                    </td>
+
+                    <td className="px-4 py-3 text-center font-medium">
+                      {safePrice(course.price)}
+                    </td>
+
+                    <td className="px-4 py-3 flex justify-end gap-3">
+                      <IconBtn
+                        onClick={() =>
+                          navigate(`/admin/courses/add?id=${course._id}`)
+                        }
+                      >
+                        <FaEdit />
+                      </IconBtn>
+
+                      <IconBtn danger onClick={() => setConfirmId(course._id)}>
+                        <FaTrash />
+                      </IconBtn>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
-      ))}
+        </GlassCard>
+      )}
 
-      {/* ================= CONFIRM MODAL ================= */}
+      {/* CONFIRM */}
       {confirmId && (
         <ConfirmModal
-          open={!!confirmId}
+          open
           title="Delete Course"
           message="Are you sure you want to delete this course? This action cannot be undone."
           onCancel={() => setConfirmId(null)}
@@ -155,7 +233,7 @@ export default function AllCourses() {
         />
       )}
 
-      {/* ================= TOAST ================= */}
+      {/* TOAST */}
       <Toast
         show={toast.show}
         message={toast.message}
@@ -165,9 +243,7 @@ export default function AllCourses() {
   );
 }
 
-/* =====================================================
-   UI HELPERS
-===================================================== */
+/* ================= UI HELPERS ================= */
 
 const IconBtn = ({ children, danger, ...props }) => (
   <button
@@ -182,13 +258,12 @@ const IconBtn = ({ children, danger, ...props }) => (
   </button>
 );
 
-const GlassCard = ({ children, hover, className = "" }) => (
+const GlassCard = ({ children, className = "" }) => (
   <div
     className={`
       bg-white/40 backdrop-blur-[24px]
       border border-white/40 rounded-3xl p-6
       shadow-[0_30px_90px_rgba(0,0,0,0.2)]
-      ${hover ? "glass-hover" : ""}
       ${className}
     `}
   >
