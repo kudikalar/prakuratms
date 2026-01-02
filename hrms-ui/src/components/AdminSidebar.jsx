@@ -14,15 +14,12 @@ import {
   FaShieldAlt,
   FaChevronDown,
   FaLifeRing,
+  FaTimes,
 } from "react-icons/fa";
 
 import PrakuraLogo from "../assets/prakura-logo.png";
 
 /* ================= ROLE ACCESS ================= */
-/* NOTE:
-   - Admin / Educator use ROLE_ACCESS filtering
-   - Student gets FULL menu automatically (no filtering)
-*/
 
 const ROLE_ACCESS = {
   Admin: [
@@ -168,12 +165,7 @@ const EDUCATOR_MENU = [
   {
     title: "Students",
     icon: <FaUsers />,
-    items: [
-      {
-        label: "Student List",
-        path: "/admin/educator/students", // safely redirects to batches
-      },
-    ],
+    items: [{ label: "Student List", path: "/admin/educator/students" }],
   },
   {
     title: "Attendance",
@@ -224,7 +216,7 @@ const EDUCATOR_MENU = [
   },
 ];
 
-/* ================= STUDENT MENU (FULL – NO FILTERING) ================= */
+/* ================= STUDENT MENU ================= */
 
 const STUDENT_MENU = [
   {
@@ -354,11 +346,13 @@ export default function AdminSidebar() {
 
   const allowedMenus =
     role === "Student"
-      ? ACTIVE_MENU.map((m) => m.title) // 🔥 FIX: show all student menus
+      ? ACTIVE_MENU.map((m) => m.title)
       : ROLE_ACCESS[role] || [];
 
   const [openMenu, setOpenMenu] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
+  /* open active menu */
   useEffect(() => {
     const active = ACTIVE_MENU.find((m) =>
       m.items.some((i) => location.pathname.startsWith(i.path))
@@ -366,53 +360,95 @@ export default function AdminSidebar() {
     if (active) setOpenMenu(active.title);
   }, [location.pathname, ACTIVE_MENU]);
 
+  /* listen to header button */
+  useEffect(() => {
+    const open = () => setMobileOpen(true);
+    window.addEventListener("OPEN_ADMIN_SIDEBAR", open);
+    return () => window.removeEventListener("OPEN_ADMIN_SIDEBAR", open);
+  }, []);
+
+  /* close on route change */
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
   return (
-    <aside className="fixed md:static z-50 h-full md:h-screen w-72 bg-gradient-to-br from-blue-800 via-blue-900 to-indigo-900 border-r border-white/20">
-      <div className="px-4 py-4 flex items-center gap-3 border-b border-white/20">
-        <img src={PrakuraLogo} className="w-8 h-8" />
-        <span className="text-white font-semibold">PRAKURA TMS</span>
-      </div>
+    <>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
 
-      <nav className="px-2 space-y-1 text-white text-sm overflow-y-auto">
-        {ACTIVE_MENU.filter(
-          (m) => allowedMenus.includes(m.title) || role === "Admin"
-        ).map((menu) => (
-          <div key={menu.title}>
-            <div
-              className="flex justify-between items-center px-3 py-2 rounded-lg cursor-pointer hover:bg-white/10"
-              onClick={() =>
-                setOpenMenu((p) => (p === menu.title ? null : menu.title))
-              }
-            >
-              <div className="flex items-center gap-3">
-                {menu.icon}
-                {menu.title}
-              </div>
-              <FaChevronDown />
-            </div>
-
-            {openMenu === menu.title && (
-              <div className="ml-8 space-y-1">
-                {menu.items.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    className={({ isActive }) =>
-                      `block px-3 py-1.5 rounded-md ${
-                        isActive
-                          ? "bg-white/20 font-medium"
-                          : "hover:bg-white/10"
-                      }`
-                    }
-                  >
-                    {item.label}
-                  </NavLink>
-                ))}
-              </div>
-            )}
+      <aside
+        className={`
+          fixed md:static z-50
+          h-full md:h-screen w-72
+          bg-gradient-to-br from-blue-800 via-blue-900 to-indigo-900
+          border-r border-white/20
+          transform transition-transform duration-300
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+        `}
+      >
+        <div className="px-4 py-4 flex items-center justify-between border-b border-white/20">
+          <div className="flex items-center gap-3">
+            <img src={PrakuraLogo} className="w-8 h-8" />
+            <span className="text-white font-semibold">PRAKURA TMS</span>
           </div>
-        ))}
-      </nav>
-    </aside>
+          <button
+            className="md:hidden text-white"
+            onClick={() => setMobileOpen(false)}
+          >
+            <FaTimes />
+          </button>
+        </div>
+
+        <nav className="px-2 py-3 space-y-1 text-white text-sm overflow-y-auto">
+          {ACTIVE_MENU.filter(
+            (m) => allowedMenus.includes(m.title) || role === "Admin"
+          ).map((menu) => (
+            <div key={menu.title}>
+              <button
+                className="w-full flex justify-between items-center px-3 py-2 rounded-lg hover:bg-white/10"
+                onClick={() =>
+                  setOpenMenu((p) => (p === menu.title ? null : menu.title))
+                }
+              >
+                <div className="flex items-center gap-3">
+                  {menu.icon}
+                  {menu.title}
+                </div>
+                <FaChevronDown
+                  className={`transition ${
+                    openMenu === menu.title ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {openMenu === menu.title && (
+                <div className="ml-8 space-y-1">
+                  {menu.items.map((item) => (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      className={({ isActive }) =>
+                        `block px-3 py-1.5 rounded-md ${
+                          isActive
+                            ? "bg-white/20 font-medium"
+                            : "hover:bg-white/10"
+                        }`
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </nav>
+      </aside>
+    </>
   );
 }

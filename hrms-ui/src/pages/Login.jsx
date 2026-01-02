@@ -238,7 +238,9 @@ export default function Login() {
   ==================================================================== */
 
   return (
-   <div className="min-h-screen bg-gradient-to-br from-purple-300/30 via-white to-purple-200/40 flex flex-col">
+<div className="min-h-screen bg-gradient-to-br 
+from-purple-200/30 via-yellow-100/40 to-purple-100/30 
+flex flex-col">
 
   {/* HEADER */}
   <header className="flex justify-center py-4">
@@ -262,11 +264,12 @@ export default function Login() {
       {/* MAIN */}
 
       <main className="flex-1 flex items-center justify-center px-4">
-        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 rounded-3xl bg-white/80 backdrop-blur-2xl border border-white/50 shadow-2xl overflow-hidden">
+        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 rounded-3xl  border border-white/50 shadow-2xl overflow-hidden">
 
           {/* LEFT SECTION */}
 
-          <div className="hidden lg:flex flex-col justify-center px-16 text-white bg-gradient-to-br from-purple-700 via-purple-800 to-indigo-900">
+          <div className="hidden lg:flex flex-col justify-center px-16 text-white bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-700
+">
             <img src={logo} className="w-16 h-16 mb-8 opacity-90" />
             <h2 className="text-4xl font-bold mb-4">{roleContent[role].title}</h2>
             <p className="text-purple-200 text-sm">{roleContent[role].desc}</p>
