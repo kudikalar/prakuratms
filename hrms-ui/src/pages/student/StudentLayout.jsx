@@ -81,9 +81,9 @@ export default function StudentLayout() {
   /* ================= UI ================= */
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50 to-slate-100">
+    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-indigo-50 via-violet-50 to-slate-100">
 
-      {/* SIDEBAR */}
+      {/* SIDEBAR – UNCHANGED */}
       <AdminSidebar />
 
       {/* MAIN */}
@@ -93,40 +93,54 @@ export default function StudentLayout() {
         <header
           className={`
             shrink-0 flex items-center justify-between
-            px-4 md:px-8 py-4
-            bg-white/80 backdrop-blur-2xl
-            border-b border-slate-200 shadow-sm
-            z-30
-            transition-transform duration-300
+            px-3 py-3 md:px-8 md:py-4
+            bg-white/95 backdrop-blur-xl
+            border-b border-slate-200
+            shadow-sm z-30
+            transition-transform duration-300 ease-out
             ${hideHeader ? "-translate-y-full md:translate-y-0" : ""}
           `}
         >
           {/* LEFT */}
-          <div className="flex items-center gap-4">
-            {/* MOBILE MENU */}
+          <div className="flex items-center gap-3">
             <button
               onClick={openSidebar}
               className="
-                md:hidden p-2 rounded-full
-                bg-white/90 border border-slate-300
-                hover:bg-indigo-100 transition shadow-sm
+                md:hidden p-2 rounded-lg
+                bg-slate-100 hover:bg-indigo-100
+                active:scale-95 transition
               "
               aria-label="Open sidebar"
             >
-              <FaBars className="text-indigo-700 text-lg" />
+              <FaBars className="text-indigo-600 text-lg" />
             </button>
 
-            <div>
-              <h1 className="text-lg font-semibold text-slate-800">
+            <div className="leading-tight">
+              <h1 className="text-base md:text-lg font-semibold text-slate-800">
                 {getTitle}
               </h1>
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] md:text-xs text-slate-500">
                 Student Portal
               </p>
             </div>
           </div>
 
-          {/* RIGHT – DESKTOP LOGOUT */}
+          {/* RIGHT */}
+          <button
+            onClick={logout}
+            className="
+              md:hidden flex items-center gap-1
+              px-3 py-1.5 rounded-full
+              bg-red-500 hover:bg-red-600
+              text-white text-xs font-semibold
+              shadow-md active:scale-95 transition
+            "
+            aria-label="Logout"
+          >
+            <FaSignOutAlt />
+          </button>
+
+          {/* DESKTOP LOGOUT */}
           <button
             onClick={logout}
             className="
@@ -141,26 +155,11 @@ export default function StudentLayout() {
             <FaSignOutAlt />
             Logout
           </button>
-
-          {/* ✅ RIGHT – MOBILE LOGOUT (FIXED) */}
-          <button
-            onClick={logout}
-            className="
-              md:hidden flex items-center gap-2
-              px-3 py-1.5 rounded-full
-              bg-red-500 hover:bg-red-600
-              text-white text-sm font-semibold
-              shadow-md transition
-            "
-            aria-label="Logout"
-          >
-            <FaSignOutAlt />
-          </button>
         </header>
 
         {/* CONTENT */}
-        <main className="flex-1 overflow-y-auto scrollbar-hide pb-16 md:pb-0">
-          <div className="min-h-full p-4 md:p-6 animate-fadeIn">
+        <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+          <div className="min-h-full p-3 md:p-6 animate-fadeIn">
             <Outlet />
           </div>
         </main>
@@ -169,7 +168,7 @@ export default function StudentLayout() {
         <nav
           className="
             md:hidden fixed bottom-0 inset-x-0 z-40
-            bg-white/90 backdrop-blur-xl
+            bg-white/95 backdrop-blur-xl
             border-t border-slate-200
             flex justify-around items-center
             h-14 shadow-lg
@@ -212,11 +211,15 @@ const BottomItem = ({ icon, label, active, onClick }) => (
   <button
     onClick={onClick}
     className={`
-      flex flex-col items-center text-xs transition-all duration-200
-      ${active ? "text-indigo-600 font-semibold scale-110" : "text-slate-500"}
+      flex flex-col items-center justify-center
+      w-full h-full
+      text-[11px] transition-all duration-200
+      ${active ? "text-indigo-600 font-semibold" : "text-slate-500"}
     `}
   >
-    <span className="text-lg mb-0.5">{icon}</span>
+    <span className={`text-xl mb-0.5 ${active ? "scale-110" : ""}`}>
+      {icon}
+    </span>
     {label}
   </button>
 );

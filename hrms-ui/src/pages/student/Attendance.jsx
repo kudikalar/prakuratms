@@ -9,11 +9,8 @@ import {
 } from "react-icons/fa";
 
 /* =========================================================================
-   STUDENT ATTENDANCE – PRAKURA PURPLE CORPORATE (ANIMATED PREMIUM EDITION)
-   ✔ Enhanced Glassmorphism
-   ✔ Smooth Animations
-   ✔ Hover Effects
-   ✔ Calendar Pop Animation
+   STUDENT ATTENDANCE – PRAKURA PURPLE CORPORATE (MOBILE READY)
+   ❌ NO CONTENT REMOVED
 ========================================================================= */
 
 export default function StudentAttendance() {
@@ -95,49 +92,55 @@ export default function StudentAttendance() {
 
   /* ================= UI ================== */
   return (
-    <div className="space-y-8 animate-fadeInSlow">
+    <div className="space-y-6 md:space-y-8 animate-fadeInSlow">
 
       {/* STUDENT HEADER CARD */}
       <div
         className="
-        bg-white/20 backdrop-blur-2xl border border-white/30 
-        rounded-3xl p-6 shadow-[0_0_40px_rgba(80,0,160,0.2)]
-        flex flex-col md:flex-row items-center gap-6
-        animate-slideUp
-      "
+          bg-white/20 backdrop-blur-2xl border border-white/30 
+          rounded-2xl md:rounded-3xl p-4 md:p-6
+          shadow-[0_0_40px_rgba(80,0,160,0.2)]
+          flex flex-col md:flex-row items-center gap-4 md:gap-6
+          animate-slideUp
+        "
       >
         {/* Avatar */}
         <div
           className="
-          w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-bold
-          bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-2xl
-          border border-white/30
-        "
+            w-16 h-16 md:w-20 md:h-20 rounded-2xl
+            flex items-center justify-center
+            text-2xl md:text-3xl font-bold
+            bg-gradient-to-br from-purple-600 to-indigo-600
+            text-white shadow-2xl
+            border border-white/30
+          "
         >
           {initials(student.name)}
         </div>
 
         {/* Details */}
-        <div className="flex-1">
-          <h2 className="text-2xl font-bold text-slate-900 drop-shadow-sm">
+        <div className="flex-1 text-center md:text-left">
+          <h2 className="text-xl md:text-2xl font-bold text-slate-900">
             {student.name}
           </h2>
+          <p className="text-xs md:text-sm text-slate-600">
+            {student.email}
+          </p>
 
-          <p className="text-sm text-slate-600">{student.email}</p>
-
-          <div className="flex gap-6 text-sm mt-2 text-slate-700">
+          <div className="flex flex-col sm:flex-row gap-1 sm:gap-6 text-xs md:text-sm mt-2 text-slate-700">
             <span>Roll: <strong>{student.roll}</strong></span>
             <span>Batch: <strong>{student.batch}</strong></span>
           </div>
         </div>
 
         {/* Month Picker */}
-        <div className="animate-popIn">
+        <div className="w-full md:w-auto animate-popIn">
           <input
             type="month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
             className="
+              w-full md:w-auto
               px-4 py-2 rounded-xl border shadow-lg 
               bg-white/40 backdrop-blur-md 
               focus:ring-2 focus:ring-purple-400
@@ -147,63 +150,33 @@ export default function StudentAttendance() {
       </div>
 
       {/* SUMMARY CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-        <AnimatedSummary
-          label="Present"
-          value={summary.present}
-          icon={<FaCheckCircle />}
-          color="emerald"
-          delay="100ms"
-        />
-
-        <AnimatedSummary
-          label="Absent"
-          value={summary.absent}
-          icon={<FaTimesCircle />}
-          color="red"
-          delay="200ms"
-        />
-
-        <AnimatedSummary
-          label="Late"
-          value={summary.late}
-          icon={<FaClock />}
-          color="yellow"
-          delay="300ms"
-        />
-
-        <AnimatedSummary
-          label="Overall %"
-          value={`${summary.percentage}%`}
-          icon={<FaCalendarAlt />}
-          color="purple"
-          delay="400ms"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <AnimatedSummary label="Present" value={summary.present} icon={<FaCheckCircle />} color="emerald" delay="100ms" />
+        <AnimatedSummary label="Absent" value={summary.absent} icon={<FaTimesCircle />} color="red" delay="200ms" />
+        <AnimatedSummary label="Late" value={summary.late} icon={<FaClock />} color="yellow" delay="300ms" />
+        <AnimatedSummary label="Overall %" value={`${summary.percentage}%`} icon={<FaCalendarAlt />} color="purple" delay="400ms" />
       </div>
 
       {/* HEALTH BAR */}
       <div
         className="
-        bg-white/20 backdrop-blur-2xl border border-white/30 shadow-xl 
-        p-6 rounded-3xl animate-slideUp delay-300
-      "
+          bg-white/20 backdrop-blur-2xl border border-white/30 shadow-xl 
+          p-4 md:p-6 rounded-2xl md:rounded-3xl animate-slideUp delay-300
+        "
       >
-        <h3 className="font-semibold text-slate-800 mb-4">
+        <h3 className="font-semibold text-slate-800 mb-3 md:mb-4">
           Attendance Health
         </h3>
 
         <div className="flex items-center gap-3">
           <div className="flex-1 h-3 rounded-full bg-slate-300/40 overflow-hidden">
             <div
-              className="
-              h-full bg-gradient-to-r from-emerald-500 to-purple-600
-              animate-growBar 
-            "
+              className="h-full bg-gradient-to-r from-emerald-500 to-purple-600 animate-growBar"
               style={{ width: `${summary.percentage}%` }}
             />
           </div>
 
-          <span className="text-sm text-slate-700">
+          <span className="text-xs md:text-sm text-slate-700">
             {summary.percentage >= 75 ? (
               <span className="flex items-center gap-1 text-emerald-600 animate-pulseSlow">
                 <FaArrowUp /> Good
@@ -220,33 +193,35 @@ export default function StudentAttendance() {
       {/* CALENDAR VIEW */}
       <div
         className="
-        bg-white/20 backdrop-blur-2xl border border-white/30 
-        shadow-2xl rounded-3xl p-6 animate-slideUp delay-500
-      "
+          bg-white/20 backdrop-blur-2xl border border-white/30 
+          shadow-2xl rounded-2xl md:rounded-3xl p-4 md:p-6
+          animate-slideUp delay-500
+        "
       >
-        <h3 className="font-semibold text-slate-800 mb-6">
+        <h3 className="font-semibold text-slate-800 mb-4 md:mb-6">
           Attendance Calendar
         </h3>
 
-        <div className="grid grid-cols-7 text-center text-xs font-semibold text-slate-600 mb-3">
+        <div className="grid grid-cols-7 text-center text-[10px] md:text-xs font-semibold text-slate-600 mb-3">
           {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-            <div key={d} className="animate-fadeIn">{d}</div>
+            <div key={d}>{d}</div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-3 text-center">
+        <div className="grid grid-cols-7 gap-2 md:gap-3 text-center">
           {generateCalendar.map((day, idx) => (
             <div
               key={idx}
               className={`
-                p-3 rounded-xl border text-xs
+                p-2 md:p-3 rounded-lg md:rounded-xl border
+                text-[10px] md:text-xs
                 transition transform hover:scale-[1.07]
                 duration-300 cursor-pointer
                 ${statusStyles[day.status]}
               `}
             >
               <p className="font-bold">{day.date.getDate()}</p>
-              <p className="text-[10px]">{day.status}</p>
+              <p className="text-[9px] md:text-[10px]">{day.status}</p>
             </div>
           ))}
         </div>
@@ -255,9 +230,8 @@ export default function StudentAttendance() {
   );
 }
 
-/* =========================================================================
-   SUMMARY CARD (Animated)
-========================================================================= */
+/* ================= SUMMARY CARD ================= */
+
 const AnimatedSummary = ({ label, value, icon, color, delay }) => {
   const colors = {
     emerald: "text-emerald-600 bg-emerald-100 border-emerald-300",
@@ -268,18 +242,20 @@ const AnimatedSummary = ({ label, value, icon, color, delay }) => {
 
   return (
     <div
-      className={`
+      className="
         bg-white/20 backdrop-blur-xl border border-white/30 
-        p-6 shadow-xl rounded-3xl
+        p-4 md:p-6 shadow-xl rounded-2xl md:rounded-3xl
         flex flex-col gap-2 animate-slideUp
-      `}
+      "
       style={{ animationDelay: delay }}
     >
-      <span className={`text-lg ${colors[color]} p-2 rounded-xl inline-block w-fit shadow`}>
+      <span className={`text-lg ${colors[color]} p-2 rounded-xl w-fit shadow`}>
         {icon}
       </span>
-      <p className="text-sm text-slate-600">{label}</p>
-      <h3 className="text-2xl font-bold text-slate-900">{value}</h3>
+      <p className="text-xs md:text-sm text-slate-600">{label}</p>
+      <h3 className="text-xl md:text-2xl font-bold text-slate-900">
+        {value}
+      </h3>
     </div>
   );
 };

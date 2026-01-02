@@ -5,24 +5,14 @@ import {
   FaClock,
   FaCheckCircle,
   FaArrowRight,
-  FaTasks,
-  FaUserTie,
-  FaCode,
   FaChartLine,
-  FaMedal,
   FaSearch,
   FaBolt,
 } from "react-icons/fa";
 
 /* =====================================================
-   STUDENT PROJECTS – ENTERPRISE ADVANCED TABLE EDITION
-   Features:
-   - Filters (All | Completed | In Progress | Pending)
-   - Search (title, mentor, technology)
-   - Sorting (click column)
-   - Pagination
-   - AI Insight Column
-   - No content removed from original version
+   STUDENT PROJECTS – MOBILE + DESKTOP
+   ❌ NO CONTENT REMOVED
 ===================================================== */
 
 export default function MyProjects() {
@@ -82,12 +72,8 @@ export default function MyProjects() {
   const filtered = useMemo(() => {
     let list = [...projects];
 
-    // Filter
-    if (filter !== "All") {
-      list = list.filter((p) => p.status === filter);
-    }
+    if (filter !== "All") list = list.filter((p) => p.status === filter);
 
-    // Search
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -98,7 +84,6 @@ export default function MyProjects() {
       );
     }
 
-    // Sorting
     list.sort((a, b) => {
       const x = a[sortField];
       const y = b[sortField];
@@ -135,15 +120,15 @@ export default function MyProjects() {
   /* ================= UI ================= */
 
   return (
-    <div className="space-y-10 animate-fadeIn">
+    <div className="space-y-6 md:space-y-10 animate-fadeIn">
 
       {/* HEADER */}
-      <div className="bg-white/40 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-white/40">
-        <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
+      <div className="bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-3xl p-4 md:p-6 shadow border">
+        <h2 className="text-xl md:text-3xl font-bold text-slate-800 flex items-center gap-2">
           <FaProjectDiagram className="text-purple-600" />
           My Projects
         </h2>
-        <p className="text-sm text-slate-600 mt-1">
+        <p className="text-xs md:text-sm text-slate-600 mt-1">
           Track progress, milestones & mentor feedback
         </p>
       </div>
@@ -163,7 +148,7 @@ export default function MyProjects() {
         </div>
 
         {/* Filters */}
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex gap-2 flex-wrap">
           {["All", "Completed", "In Progress", "Pending"].map((f) => (
             <button
               key={f}
@@ -180,9 +165,9 @@ export default function MyProjects() {
         </div>
       </div>
 
-      {/* TABLE */}
-      <div className="overflow-x-auto bg-white/40 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-white/40">
-        <table className="w-full text-sm">
+      {/* TABLE – MOBILE SCROLL SAFE */}
+      <div className="overflow-x-auto bg-white/60 backdrop-blur-xl rounded-2xl md:rounded-3xl shadow border">
+        <table className="min-w-[900px] w-full text-sm">
           <thead className="bg-purple-600 text-white">
             <tr>
               <Th label="Title" field="title" sortField={sortField} sortOrder={sortOrder} onSort={toggleSort} />
@@ -199,47 +184,20 @@ export default function MyProjects() {
           <tbody>
             {paginated.map((p) => (
               <tr key={p.id} className="border-b hover:bg-purple-50 transition">
-
-                {/* Title */}
                 <td className="px-4 py-3 font-medium text-slate-700">
                   <div className="flex items-center gap-2">
                     <FaProjectDiagram className="text-indigo-500" />
                     {p.title}
                   </div>
                 </td>
-
-                {/* Technology */}
                 <td className="px-4 py-3">{p.technology}</td>
-
-                {/* Mentor */}
                 <td className="px-4 py-3">{p.mentor}</td>
-
-                {/* Status */}
+                <td className="px-4 py-3"><Status status={p.status} /></td>
+                <td className="px-4 py-3"><ProgressBar value={p.progress} /></td>
+                <td className="px-4 py-3 text-slate-600">{new Date(p.deadline).toDateString()}</td>
+                <td className="px-4 py-3 text-xs max-w-xs"><AIInsight progress={p.progress} status={p.status} /></td>
                 <td className="px-4 py-3">
-                  <Status status={p.status} />
-                </td>
-
-                {/* Progress */}
-                <td className="px-4 py-3">
-                  <ProgressBar value={p.progress} />
-                </td>
-
-                {/* Deadline */}
-                <td className="px-4 py-3 text-slate-600">
-                  {new Date(p.deadline).toDateString()}
-                </td>
-
-                {/* AI Insight */}
-                <td className="px-4 py-3 text-xs text-slate-600 max-w-xs">
-                  <AIInsight progress={p.progress} status={p.status} />
-                </td>
-
-                {/* Action */}
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => openProject(p)}
-                    className="text-indigo-600 hover:underline flex items-center gap-1"
-                  >
+                  <button onClick={() => openProject(p)} className="text-indigo-600 hover:underline flex items-center gap-1">
                     Open <FaArrowRight />
                   </button>
                 </td>
@@ -256,32 +214,21 @@ export default function MyProjects() {
       {/* PAGINATION */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-4 pt-4">
-          <button disabled={page === 1} onClick={() => setPage(page - 1)} className="pagination-btn">
-            ‹
-          </button>
+          <button disabled={page === 1} onClick={() => setPage(page - 1)} className="pagination-btn">‹</button>
           <span className="text-sm text-slate-600 font-medium">Page {page} of {totalPages}</span>
-          <button disabled={page === totalPages} onClick={() => setPage(page + 1)} className="pagination-btn">
-            ›
-          </button>
+          <button disabled={page === totalPages} onClick={() => setPage(page + 1)} className="pagination-btn">›</button>
         </div>
       )}
     </div>
   );
 }
 
-/* =====================================================
-   COMPONENTS
-===================================================== */
+/* ================= COMPONENTS ================= */
 
 const Th = ({ label, field, sortField, sortOrder, onSort }) => (
-  <th
-    onClick={() => onSort(field)}
-    className="px-4 py-3 cursor-pointer select-none text-left"
-  >
+  <th onClick={() => onSort(field)} className="px-4 py-3 cursor-pointer select-none text-left">
     {label}
-    {sortField === field && (
-      <span className="ml-1 text-xs">{sortOrder === "asc" ? "▲" : "▼"}</span>
-    )}
+    {sortField === field && <span className="ml-1 text-xs">{sortOrder === "asc" ? "▲" : "▼"}</span>}
   </th>
 );
 
@@ -301,12 +248,9 @@ const Status = ({ status }) => {
 };
 
 const ProgressBar = ({ value }) => (
-  <div>
+  <div className="w-24">
     <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-      <div
-        className="h-full bg-indigo-500 rounded-full transition-all duration-700"
-        style={{ width: `${value}%` }}
-      />
+      <div className="h-full bg-indigo-500 rounded-full transition-all duration-700" style={{ width: `${value}%` }} />
     </div>
   </div>
 );
@@ -332,10 +276,6 @@ const style = `
   border-radius: 8px;
   border: 1px solid #ddd;
   background: white;
-  transition: 0.2s;
-}
-.pagination-btn:hover {
-  background: #eee;
 }
 .pagination-btn:disabled {
   opacity: 0.4;
