@@ -4,6 +4,10 @@ import { NavLink, useNavigate } from "react-router-dom";
 import ConfirmModal from "../../../components/ConfirmModal";
 import Toast from "../../../components/Toast";
 
+/* ================= STORAGE KEYS ================= */
+const BATCHES_KEY = "batches";
+const COURSES_KEY = "PRAKURA_COURSES";
+
 /* ================= HELPERS ================= */
 
 const getBatchStatus = (startDate, endDate) => {
@@ -29,6 +33,8 @@ export default function Batches() {
   const navigate = useNavigate();
 
   const [batches, setBatches] = useState([]);
+  const [courses, setCourses] = useState([]);
+
   const [toast, setToast] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -39,8 +45,12 @@ export default function Batches() {
 
   /* ================= LOAD ================= */
   useEffect(() => {
-    setBatches(JSON.parse(localStorage.getItem("batches")) || []);
+    setBatches(JSON.parse(localStorage.getItem(BATCHES_KEY)) || []);
+    setCourses(JSON.parse(localStorage.getItem(COURSES_KEY)) || []);
   }, []);
+
+  const getCourseTitle = (courseId) =>
+    courses.find((c) => String(c._id) === String(courseId))?.title || "—";
 
   /* ================= DELETE ================= */
   const confirmDelete = (id) => {
@@ -51,7 +61,7 @@ export default function Batches() {
   const deleteBatch = () => {
     const updated = batches.filter((b) => b.id !== selectedId);
     setBatches(updated);
-    localStorage.setItem("batches", JSON.stringify(updated));
+    localStorage.setItem(BATCHES_KEY, JSON.stringify(updated));
     setShowModal(false);
     setToast("🗑️ Batch deleted successfully");
     setTimeout(() => setToast(""), 2000);
@@ -64,8 +74,11 @@ export default function Batches() {
         const matchName = b.name
           ?.toLowerCase()
           .includes(search.toLowerCase());
+
         const matchCourse =
-          courseFilter === "All" || b.course === courseFilter;
+          courseFilter === "All" ||
+          String(b.courseId) === String(courseFilter);
+
         return matchName && matchCourse;
       })
       .sort((a, b) =>
@@ -88,7 +101,10 @@ export default function Batches() {
     ),
   };
 
-  const uniqueCourses = ["All", ...new Set(batches.map((b) => b.course))];
+  const uniqueCourses = [
+    { id: "All", title: "All Courses" },
+    ...courses.map((c) => ({ id: c._id, title: c.title })),
+  ];
 
   return (
     <div
@@ -99,7 +115,6 @@ export default function Batches() {
         shadow-[0_40px_120px_rgba(80,70,200,0.25)]
       "
     >
-
       {/* ================= HEADER ================= */}
       <div className="flex justify-between items-center">
         <div>
@@ -141,7 +156,9 @@ export default function Batches() {
             className="glass-input"
           >
             {uniqueCourses.map((c) => (
-              <option key={c}>{c}</option>
+              <option key={c.id} value={c.id}>
+                {c.title}
+              </option>
             ))}
           </select>
 
@@ -167,6 +184,7 @@ export default function Batches() {
             key={status}
             title={status}
             batches={list}
+            getCourseTitle={getCourseTitle}
             onEdit={(id) => navigate(`/admin/batches/create?id=${id}`)}
             onDelete={confirmDelete}
           />
@@ -188,7 +206,7 @@ export default function Batches() {
 
 /* ================= COLUMN ================= */
 
-const BatchColumn = ({ title, batches, onEdit, onDelete }) => (
+const BatchColumn = ({ title, batches, getCourseTitle, onEdit, onDelete }) => (
   <div className="space-y-4">
     <h3 className="text-lg font-bold text-slate-700">
       {title}
@@ -214,7 +232,9 @@ const BatchColumn = ({ title, batches, onEdit, onDelete }) => (
                 <h4 className="font-semibold text-slate-800">
                   {b.name}
                 </h4>
-                <p className="text-xs text-slate-600">{b.course}</p>
+                <p className="text-xs text-slate-600">
+                  {getCourseTitle(b.courseId)}
+                </p>
                 <p className="text-xs text-slate-500">
                   {b.startDate} → {b.endDate}
                 </p>
