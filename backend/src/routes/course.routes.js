@@ -9,30 +9,31 @@ import { protect, authorize } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-/* ================= COURSE ROUTES ================= */
+/* ================= ADMIN COURSES ================= */
+
 router.post(
-  "/admin/courses",
+  "/",
   protect,
   authorize("ADMIN"),
   createCourse
 );
 
 router.get(
-  "/admin/courses",
+  "/",
   protect,
   authorize("ADMIN"),
   getAllCourses
 );
 
 router.put(
-  "/admin/courses/:id",
+  "/:id",
   protect,
   authorize("ADMIN"),
   updateCourse
 );
 
 router.delete(
-  "/admin/courses/:id",
+  "/:id",
   protect,
   authorize("ADMIN"),
   deleteCourse

@@ -10,9 +10,22 @@ import {
 } from "react-icons/fa";
 
 /* ================= STORAGE KEYS ================= */
+
 const USERS_KEY = "users";
 const COURSES_KEY = "PRAKURA_COURSES";
 const BATCHES_KEY = "batches";
+
+/* ================= HELPERS ================= */
+
+const readLS = (key, fallback) => {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const getId = (obj) => String(obj?._id || obj?.id || "");
 
 /* ================= STATUS STYLES ================= */
 
@@ -34,70 +47,117 @@ const STATUS_STYLES = {
   },
 };
 
+/* ================= COMPONENT ================= */
+
 export default function StudentCourses() {
   const [courses, setCourses] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
-  /* ================= LOAD COURSES LOGIN-WISE ================= */
-useEffect(() => {
-  const loadStudentCourses = () => {
-    const loggedUser = JSON.parse(localStorage.getItem("user"));
-    if (!loggedUser || loggedUser.role !== "STUDENT") {
-      setCourses([]);
-      return;
+  /* ================= LOAD STUDENT COURSES ================= */
+
+  useEffect(() => {
+    const loadStudentCourses = () => {
+      const loggedUser = readLS("user", null);
+      if (!loggedUser || loggedUser.role !== "STUDENT") {
+        setCourses([]);
+        return;
+      }
+
+      const users = readLS(USERS_KEY, { students: [] });
+      const allCourses = readLS(COURSES_KEY, []);
+      const allBatches = readLS(BATCHES_KEY, []);
+
+      // ✅ Resolve student by ID (single source of truth)
+      const student = users.students.find(
+        (s) => getId(s) === getId(loggedUser)
+      );
+
+      if (!student) {
+        setCourses([]);
+        return;
+      }
+
+      /* ================= RESOLVE COURSE IDS (ROBUST) ================= */
+
+      const courseIds = [
+        student.courseId,
+        ...(student.courseIds || []),
+      ]
+        .filter(Boolean)
+        .map(String);
+
+      if (!courseIds.length) {
+        setCourses([]);
+        return;
+      }
+
+      /* ================= BUILD COURSE VIEW ================= */
+
+     /* ================= RESOLVE COURSES (ULTIMATE SAFE) ================= */
+
+const resolvedCourses = [];
+
+allCourses.forEach((course) => {
+  const courseId = getId(course);
+  const courseTitle = course.title?.toLowerCase();
+
+  const matchesDirect =
+    String(student.courseId) === courseId ||
+    String(student.courseId) === String(course.id) ||
+    String(student.courseId)?.toLowerCase() === courseTitle;
+
+  const matchesLegacy =
+    String(student.course)?.toLowerCase() === courseTitle ||
+    (Array.isArray(student.courses) &&
+      student.courses.some(
+        (c) => String(c).toLowerCase() === courseTitle
+      ));
+
+  let matchesBatch = false;
+  if (student.batchId) {
+    const batch = allBatches.find(
+      (b) => getId(b) === String(student.batchId)
+    );
+    if (batch) {
+      matchesBatch =
+        String(batch.courseId) === courseId ||
+        String(batch.course)?.toLowerCase() === courseTitle;
     }
+  }
 
-    const users = JSON.parse(localStorage.getItem("users")) || { students: [] };
-    const coursesLS = JSON.parse(localStorage.getItem("PRAKURA_COURSES")) || [];
-    const batches = JSON.parse(localStorage.getItem("batches")) || [];
-
-    const student = users.students.find(
-      (s) => s.email?.toLowerCase() === loggedUser.email?.toLowerCase()
+  if (matchesDirect || matchesLegacy || matchesBatch) {
+    const batch = allBatches.find(
+      (b) => getId(b) === String(student.batchId)
     );
 
-    if (!student) {
-      setCourses([]);
-      return;
-    }
+    resolvedCourses.push({
+      id: courseId,
+      title: course.title,
+      trainer: course.trainer || "Assigned Trainer",
+      duration: course.duration || "—",
+      progress: Number(student.progress || 0),
+      lastAccessed: student.lastAccessed || "Not started",
+      nextSession: batch
+        ? `${batch.name} (${batch.startDate || "—"} → ${
+            batch.endDate || "—"
+          })`
+        : "Batch not assigned",
+      skills: course.skills || [],
+      resumeWeight: "High",
+    });
+  }
+});
 
-    const batch = batches.find(
-      (b) => String(b.id) === String(student.batchId)
-    );
+setCourses(resolvedCourses);
 
-    const course = coursesLS.find(
-      (c) => String(c._id) === String(student.courseId)
-    );
+    };
 
-    if (!course) {
-      setCourses([]);
-      return;
-    }
-
-    setCourses([
-      {
-        id: course._id,
-        title: course.title,
-        trainer: course.trainer || "Assigned Trainer",
-        duration: course.duration || "—",
-        progress: 0,
-        lastAccessed: "Not started",
-        nextSession: batch
-          ? `${batch.startDate} → ${batch.endDate}`
-          : "Upcoming",
-        skills: course.skills || [],
-        resumeWeight: "High",
-      },
-    ]);
-  };
-
-  loadStudentCourses();
-
-  // 🔥 Re-load when admin updates data
-  window.addEventListener("storage", loadStudentCourses);
-  return () => window.removeEventListener("storage", loadStudentCourses);
-}, []);
-
+    loadStudentCourses();
+    window.addEventListener("storage", loadStudentCourses);
+    return () =>
+      window.removeEventListener("storage", loadStudentCourses);
+  }, []);
 
   /* ================= FILTER ================= */
 
@@ -125,7 +185,6 @@ useEffect(() => {
 
   return (
     <div className="space-y-8">
-
       {/* HEADER */}
       <div className="bg-white/70 p-6 rounded-2xl shadow">
         <div className="flex justify-between items-center gap-4">
@@ -154,12 +213,11 @@ useEffect(() => {
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold
-                ${
-                  statusFilter === s
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-100 text-slate-600"
-                }`}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold ${
+                statusFilter === s
+                  ? "bg-indigo-600 text-white"
+                  : "bg-slate-100 text-slate-600"
+              }`}
             >
               {s}
             </button>
