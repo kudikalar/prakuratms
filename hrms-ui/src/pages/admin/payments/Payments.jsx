@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaWhatsapp, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
+import {
+  FaWhatsapp,
+  FaEdit,
+  FaCheck,
+  FaTimes,
+} from "react-icons/fa";
 
 /* ================= CONFIG ================= */
 const PAGE_SIZE = 5;
 const DEFAULT_TOTAL_FEE = 45000;
 
-/* ================= HELPERS ================= */
+/* ================= STORAGE HELPERS ================= */
 const getUsers = () =>
   JSON.parse(localStorage.getItem("users")) || { students: [] };
 
@@ -15,14 +20,26 @@ const getPayments = () =>
 const savePayments = (data) =>
   localStorage.setItem("payments", JSON.stringify(data));
 
+const getCourses = () =>
+  JSON.parse(localStorage.getItem("PRAKURA_COURSES")) || [];
+
+const getBatches = () =>
+  JSON.parse(localStorage.getItem("batches")) || [];
+
 /* ================= PAGE ================= */
 export default function Payments() {
   const [students, setStudents] = useState([]);
   const [payments, setPayments] = useState({});
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [page, setPage] = useState(1);
 
-  /* LOAD + SYNC */
+  const [page, setPage] = useState(1);
+  const [courseFilter, setCourseFilter] = useState("ALL");
+  const [batchFilter, setBatchFilter] = useState("ALL");
+
+  const courses = getCourses();
+  const batches = getBatches();
+
+  /* ================= LOAD & NORMALIZE ================= */
   useEffect(() => {
     const users = getUsers();
     const storedPayments = getPayments();
@@ -42,16 +59,21 @@ export default function Payments() {
 
     savePayments(updated);
     setPayments(updated);
-    setStudents(users.students);
+    setStudents(users.students || []);
   }, []);
 
-  /* MERGED VIEW */
+  /* ================= MERGED ROWS ================= */
   const rows = useMemo(() => {
     return students.map((s) => {
       const p = payments[s.id] || {};
       const total = p.total || DEFAULT_TOTAL_FEE;
       const paid = p.paid || 0;
       const due = total - paid;
+
+      const course = courses.find((c) => c._id === s.courseId);
+      const batch = batches.find(
+        (b) => (b._id || b.id) === s.batchId
+      );
 
       const status =
         due === 0
@@ -63,27 +85,42 @@ export default function Payments() {
       return {
         ...s,
         phone: s.phone || "—",
+        courseId: s.courseId,
+        batchId: s.batchId,
+        courseName: course?.title || "—",
+        batchName: batch?.name || "—",
+        batchStatus: batch?.status || "RUNNING",
         total,
         paid,
         due,
         lastPayment: p.lastPayment || "—",
-        deadline: p.deadline || "—",
         status,
       };
     });
-  }, [students, payments]);
+  }, [students, payments, courses, batches]);
 
-  /* PAGINATION */
+  /* ================= FILTER ================= */
+  const filteredRows = useMemo(() => {
+    return rows.filter((r) => {
+      const courseMatch =
+        courseFilter === "ALL" || r.courseId === courseFilter;
+      const batchMatch =
+        batchFilter === "ALL" || r.batchId === batchFilter;
+      return courseMatch && batchMatch;
+    });
+  }, [rows, courseFilter, batchFilter]);
+
+  /* ================= PAGINATION ================= */
   const start = (page - 1) * PAGE_SIZE;
-  const paginated = rows.slice(start, start + PAGE_SIZE);
-  const totalPages = Math.ceil(rows.length / PAGE_SIZE);
+  const paginated = filteredRows.slice(start, start + PAGE_SIZE);
+  const totalPages = Math.ceil(filteredRows.length / PAGE_SIZE);
 
-  /* TOTALS */
-  const totalFee = rows.reduce((a, b) => a + b.total, 0);
-  const totalPaid = rows.reduce((a, b) => a + b.paid, 0);
+  /* ================= TOTALS ================= */
+  const totalFee = filteredRows.reduce((a, b) => a + b.total, 0);
+  const totalPaid = filteredRows.reduce((a, b) => a + b.paid, 0);
   const totalDue = totalFee - totalPaid;
 
-  /* SAVE PAYMENT */
+  /* ================= SAVE PAYMENT ================= */
   const savePayment = ({ studentId, amount, total, date, mode }) => {
     const updated = { ...payments };
     const p = updated[studentId];
@@ -98,8 +135,9 @@ export default function Payments() {
     setSelectedStudent(null);
   };
 
-  /* WHATSAPP */
+  /* ================= WHATSAPP ================= */
   const sendWhatsAppReminder = (s) => {
+    if (!s.phone || s.phone === "—") return;
     const msg = `Hello ${s.name}, your pending fee is ₹${s.due}. Please complete payment.`;
     window.open(
       `https://wa.me/91${s.phone}?text=${encodeURIComponent(msg)}`,
@@ -107,157 +145,192 @@ export default function Payments() {
     );
   };
 
+  /* ================= UI ================= */
   return (
-    <div
-      className="
-        max-w-7xl mx-auto space-y-8 pb-24 animate-fadeIn
-        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
-        rounded-[32px] p-6 md:p-8
-        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
-      "
-    >
+    <div className="max-w-7xl mx-auto space-y-8 pb-24">
       {/* HEADER */}
       <div>
         <h2 className="text-2xl font-bold text-slate-800">
           Payments Overview
         </h2>
         <p className="text-sm text-slate-600">
-          Track fees, pending dues & payment history
+          Course & batch wise fee tracking
         </p>
       </div>
 
-      {/* ================= MOBILE TOTAL SUMMARY ================= */}
-      <div className="md:hidden">
-        <GlassCard>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between font-semibold">
-              <span>Total Fee</span>
-              <span>₹{totalFee}</span>
-            </div>
-            <div className="flex justify-between font-semibold text-emerald-600">
-              <span>Collected</span>
-              <span>₹{totalPaid}</span>
-            </div>
-            <div className="flex justify-between font-semibold text-red-600">
-              <span>Pending</span>
-              <span>₹{totalDue}</span>
-            </div>
-          </div>
-        </GlassCard>
-      </div>
+      {/* FILTERS */}
+      <GlassCard>
+        <div className="grid md:grid-cols-3 gap-4 text-sm">
+          <select
+            value={courseFilter}
+            onChange={(e) => {
+              setCourseFilter(e.target.value);
+              setBatchFilter("ALL");
+              setPage(1);
+            }}
+            className="glass-input"
+          >
+            <option value="ALL">All Courses</option>
+            {courses.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.title}
+              </option>
+            ))}
+          </select>
 
-      {/* ================= MOBILE CARDS ================= */}
-      <div className="md:hidden space-y-4">
-        {paginated.map((s) => (
-          <GlassCard key={s.id}>
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold">{s.name}</h3>
-              <StatusBadge status={s.status} />
-            </div>
+          <select
+            value={batchFilter}
+            disabled={courseFilter === "ALL"}
+            onChange={(e) => {
+              setBatchFilter(e.target.value);
+              setPage(1);
+            }}
+            className="glass-input"
+          >
+            <option value="ALL">All Batches</option>
+            {batches
+              .filter(
+                (b) =>
+                  courseFilter === "ALL" ||
+                  b.courseId === courseFilter
+              )
+              .map((b) => (
+                <option key={b._id || b.id} value={b._id || b.id}>
+                  {b.name}
+                </option>
+              ))}
+          </select>
 
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><b>Phone:</b> {s.phone}</div>
-              <div><b>Total:</b> ₹{s.total}</div>
-              <div className="text-emerald-600"><b>Paid:</b> ₹{s.paid}</div>
-              <div className="text-red-600"><b>Due:</b> ₹{s.due}</div>
-              <div className="col-span-2"><b>Last Pay:</b> {s.lastPayment}</div>
-            </div>
+          <button
+            onClick={() => {
+              setCourseFilter("ALL");
+              setBatchFilter("ALL");
+              setPage(1);
+            }}
+            className="bg-white/60 rounded-xl px-4"
+          >
+            Reset
+          </button>
+        </div>
+      </GlassCard>
 
-            <div className="flex justify-between items-center mt-4">
-              <button
-                onClick={() => setSelectedStudent(s)}
-                className="text-purple-600 font-semibold"
-              >
-                Add Payment
-              </button>
+      {/* TABLE */}
+      <GlassCard>
+        <table className="w-full text-sm">
+          <thead className="border-b">
+            <tr>
+              <th>Student</th>
+              <th>Course</th>
+              <th>Batch</th>
+              <th>Total</th>
+              <th>Paid</th>
+              <th>Due</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
 
-              {s.status !== "PAID" && (
-                <button
-                  onClick={() => sendWhatsAppReminder(s)}
-                  className="text-green-600 text-xl"
-                >
-                  <FaWhatsapp />
-                </button>
-              )}
-            </div>
-          </GlassCard>
-        ))}
-      </div>
+          <tbody>
+            {paginated.map((s) => (
+              <tr key={s.id} className="border-b">
+                <td>{s.name}</td>
+                <td>{s.courseName}</td>
+                <td>{s.batchName}</td>
+                <td>₹{s.total}</td>
+                <td className="text-emerald-600">₹{s.paid}</td>
+                <td className="text-red-600">₹{s.due}</td>
+                <td>
+                  <StatusBadge status={s.status} />
+                </td>
+                <td className="flex gap-3">
+                  <button
+                    onClick={() => setSelectedStudent(s)}
+                    className="text-purple-600"
+                  >
+                    Add
+                  </button>
+                  {s.status !== "PAID" && (
+                    <button
+                      onClick={() => sendWhatsAppReminder(s)}
+                      className="text-green-600"
+                    >
+                      <FaWhatsapp />
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-      {/* ================= DESKTOP TABLE ================= */}
-      <div className="hidden md:block">
-        <GlassCard>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b text-slate-600">
-                <tr>
-                  <th className="py-3 text-left">Student</th>
-                  <th>Phone</th>
-                  <th>Total</th>
-                  <th>Paid</th>
-                  <th>Due</th>
-                  <th>Last Payment</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
+        <div className="mt-6 flex justify-between font-semibold text-sm">
+          <span>Total: ₹{totalFee}</span>
+          <span className="text-emerald-600">
+            Collected: ₹{totalPaid}
+          </span>
+          <span className="text-red-600">
+            Pending: ₹{totalDue}
+          </span>
+        </div>
+      </GlassCard>
 
-              <tbody>
-                {paginated.map((s) => (
-                  <tr key={s.id} className="border-b last:border-0">
-                    <td className="py-3 font-medium">{s.name}</td>
-                    <td>{s.phone}</td>
-                    <td className="text-center">₹{s.total}</td>
-                    <td className="text-center text-emerald-600">₹{s.paid}</td>
-                    <td className="text-center text-red-600">₹{s.due}</td>
-                    <td className="text-center">{s.lastPayment}</td>
+      {/* RUNNING BATCH SUMMARY */}
+      <GlassCard>
+        <h3 className="font-semibold mb-4">
+          Running Batches – Payment Summary
+        </h3>
+
+        <table className="w-full text-sm">
+          <thead className="border-b">
+            <tr>
+              <th>Batch</th>
+              <th>Students</th>
+              <th>Collected</th>
+              <th>Pending</th>
+            </tr>
+          </thead>
+          <tbody>
+            {batches
+              .filter((b) => b.status === "RUNNING")
+              .map((b) => {
+                const batchStudents = rows.filter(
+                  (r) => r.batchId === (b._id || b.id)
+                );
+                const collected = batchStudents.reduce(
+                  (a, s) => a + s.paid,
+                  0
+                );
+                const due = batchStudents.reduce(
+                  (a, s) => a + s.due,
+                  0
+                );
+
+                return (
+                  <tr key={b._id || b.id} className="border-b">
+                    <td>{b.name}</td>
                     <td className="text-center">
-                      <StatusBadge status={s.status} />
+                      {batchStudents.length}
                     </td>
-                    <td className="text-center">
-                      <div className="flex justify-center gap-3">
-                        <button
-                          onClick={() => setSelectedStudent(s)}
-                          className="text-purple-600 font-semibold"
-                        >
-                          Add
-                        </button>
-                        {s.status !== "PAID" && (
-                          <button
-                            onClick={() => sendWhatsAppReminder(s)}
-                            className="text-green-600"
-                          >
-                            <FaWhatsapp />
-                          </button>
-                        )}
-                      </div>
+                    <td className="text-emerald-600 text-center">
+                      ₹{collected}
+                    </td>
+                    <td className="text-red-600 text-center">
+                      ₹{due}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* TOTAL BAR */}
-            <div className="mt-6 flex justify-between font-semibold text-sm">
-              <span>Total Fee: ₹{totalFee}</span>
-              <span className="text-emerald-600">
-                Collected: ₹{totalPaid}
-              </span>
-              <span className="text-red-600">
-                Pending: ₹{totalDue}
-              </span>
-            </div>
-          </div>
-        </GlassCard>
-      </div>
+                );
+              })}
+          </tbody>
+        </table>
+      </GlassCard>
 
       {/* PAGINATION */}
       <div className="flex justify-between items-center text-sm">
         <span>
           Showing {start + 1}–
-          {Math.min(start + PAGE_SIZE, rows.length)} of {rows.length}
+          {Math.min(start + PAGE_SIZE, filteredRows.length)} of{" "}
+          {filteredRows.length}
         </span>
-
         <div className="flex gap-2">
           {[...Array(totalPages)].map((_, i) => (
             <button
@@ -324,38 +397,29 @@ function AddPaymentModal({ student, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-      <div className="bg-white w-96 max-w-[90%] rounded-3xl p-6 space-y-4 shadow-xl">
-        <h3 className="text-lg font-semibold">Add Payment</h3>
+      <div className="bg-white w-96 rounded-3xl p-6 space-y-4">
+        <h3 className="font-semibold">Add Payment</h3>
 
-        <div className="bg-slate-50 rounded-xl p-3 text-sm space-y-2">
+        <div className="text-sm space-y-2">
           <Row label="Total Fee">
             {!editingTotal ? (
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">₹{total}</span>
-                <button onClick={() => setEditingTotal(true)}>
-                  <FaEdit />
-                </button>
-              </div>
+              <span>₹{total}</span>
             ) : (
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  value={total}
-                  onChange={(e) => setTotal(Number(e.target.value))}
-                  className="w-24 border rounded px-2 py-1"
-                />
-                <button onClick={() => setEditingTotal(false)}>
-                  <FaCheck />
-                </button>
-                <button onClick={() => setTotal(student.total)}>
-                  <FaTimes />
-                </button>
-              </div>
+              <input
+                type="number"
+                value={total}
+                onChange={(e) => setTotal(Number(e.target.value))}
+              />
             )}
+            <button onClick={() => setEditingTotal(!editingTotal)}>
+              <FaEdit />
+            </button>
           </Row>
 
           <Row label="Paid">
-            <span className="text-emerald-600">₹{student.paid}</span>
+            <span className="text-emerald-600">
+              ₹{student.paid}
+            </span>
           </Row>
 
           <Row label="Due">
@@ -365,16 +429,16 @@ function AddPaymentModal({ student, onClose, onSave }) {
 
         <input
           type="number"
-          placeholder="Payment Amount"
+          placeholder="Amount"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="w-full glass-input"
+          className="glass-input w-full"
         />
 
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value)}
-          className="w-full glass-input"
+          className="glass-input w-full"
         >
           <option>UPI</option>
           <option>Cash</option>

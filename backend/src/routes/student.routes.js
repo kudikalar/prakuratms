@@ -1,9 +1,14 @@
 import express from "express";
-import { protect, authorize } from "../middleware/auth.middleware.js";
-import { getStudentCourses } from "../controllers/enrollment.controller.js";
+import { protect, authorize } from "../middlewares/auth.middleware.js";
+import { getStudentAttendance } from "../controllers/student.controller.js";
 
 const router = express.Router();
 
-router.get("/my-courses", protect, authorize("STUDENT"), getStudentCourses);
+router.get(
+  "/attendance",
+  protect,
+  authorize("STUDENT"),
+  getStudentAttendance
+);
 
 export default router;

@@ -147,12 +147,42 @@ export default function Login() {
         showToast("error", data.message || "Invalid credentials");
         return;
       }
+/* ================= SYNC USER WITH LOCAL STUDENT RECORD ================= */
 
-      const normalizedUser = { ...data.user, role: normalizeRole(role) };
+let finalUser = { ...data.user, role: normalizeRole(role) };
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(normalizedUser));
-      localStorage.setItem("loginRole", role);
+if (role === "Student") {
+  const users = JSON.parse(localStorage.getItem("users")) || { students: [] };
+
+  const student = users.students.find(
+    (s) => s.email?.toLowerCase() === email.trim().toLowerCase()
+  );
+
+  if (!student) {
+    throw new Error("Student record not found. Please contact admin.");
+  }
+
+  // ✅ NORMALIZE ID (THIS IS THE FIX)
+  const studentId = student._id || student.id;
+
+  if (!studentId) {
+    throw new Error("Invalid student record: missing id");
+  }
+
+  // ✅ USE ADMIN STUDENT AS SOURCE OF TRUTH
+  finalUser = {
+    _id: String(studentId),   // 🔥 ALWAYS SET
+    name: student.name,
+    email: student.email,
+    role: "STUDENT",
+  };
+}
+
+localStorage.setItem("token", data.token);
+localStorage.setItem("user", JSON.stringify(finalUser));
+localStorage.setItem("loginRole", role);
+
+
 
       if (rememberMe) localStorage.setItem("rememberMe", "true");
 
