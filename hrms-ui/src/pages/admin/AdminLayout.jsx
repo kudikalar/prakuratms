@@ -44,10 +44,21 @@ export default function AdminLayout() {
 
   /* ================= ACTIONS ================= */
 
-  const logout = () => {
-    localStorage.clear();
-    navigate("/login", { replace: true });
-  };
+const logout = () => {
+  // ❌ remove only auth-related keys
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("role");
+
+  // ✅ DO NOT TOUCH app data
+  // PRAKURA_COURSES
+  // users
+  // batches
+  // batchAllocations
+
+  navigate("/login");
+};
+
 
   /** 🔥 FIX: Mobile sidebar trigger */
   const openSidebar = () => {

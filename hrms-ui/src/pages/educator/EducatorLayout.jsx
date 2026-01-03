@@ -37,10 +37,13 @@ export default function EducatorLayout() {
 
   /* ================= LOGOUT ================= */
 
-  const logout = useCallback(() => {
-    localStorage.clear();
-    window.location.replace("/#/login");
-  }, []);
+const logout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("loginRole");
+  navigate("/login");
+};
+
 
   /* ================= MOBILE SIDEBAR OPEN ================= */
 

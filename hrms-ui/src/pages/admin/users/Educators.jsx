@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { FaPlus, FaEdit, FaTrash, FaTimes } from "react-icons/fa";
 import Toast from "../../../components/Toast";
 
+const COURSES_KEY = "PRAKURA_COURSES";
+
 /* ================= DEFAULTS ================= */
 
 const emptyEducator = {
@@ -32,19 +34,25 @@ export default function Educators() {
   });
 
   /* ================= LOAD DATA ================= */
-  useEffect(() => {
-    const users = JSON.parse(localStorage.getItem("users")) || {
-      admins: [],
-      educators: [],
-      students: [],
-    };
+useEffect(() => {
+  const users = JSON.parse(localStorage.getItem("users")) || {
+    admins: [],
+    educators: [],
+    students: [],
+  };
 
-    const storedCourses =
-      JSON.parse(localStorage.getItem("courses")) || [];
+  let storedCourses =
+    JSON.parse(localStorage.getItem(COURSES_KEY)) || [];
 
-    setEducators(users.educators || []);
-    setCourses(storedCourses);
-  }, []);
+  // 🔐 fallback if storage wiped accidentally
+  if (!storedCourses.length) {
+    console.warn("Courses missing from storage");
+  }
+
+  setEducators(users.educators || []);
+  setCourses(storedCourses);
+}, []);
+
 
   /* ================= VALIDATION ================= */
   const validate = (data = form) => {
@@ -227,7 +235,7 @@ export default function Educators() {
             >
               <option value="">Assign Course</option>
               {courses.map((c) => (
-                <option key={c.id} value={c.title}>
+                <option key={c._id} value={c.title}>
                   {c.title}
                 </option>
               ))}

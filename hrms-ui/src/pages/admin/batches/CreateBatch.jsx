@@ -3,6 +3,8 @@ import { FaArrowLeft, FaSave, FaEraser } from "react-icons/fa";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Toast from "../../../components/Toast";
 
+const COURSES_KEY = "PRAKURA_COURSES";
+
 /* ================= DEFAULT FORM ================= */
 
 const emptyForm = {
@@ -29,7 +31,7 @@ export default function CreateBatch() {
   /* ================= LOAD COURSES ================= */
   useEffect(() => {
     const storedCourses =
-      JSON.parse(localStorage.getItem("courses")) || [];
+      JSON.parse(localStorage.getItem(COURSES_KEY)) || [];
     setCourses(storedCourses);
   }, []);
 
@@ -179,7 +181,6 @@ export default function CreateBatch() {
       {/* FORM */}
       <GlassCard>
         <form onSubmit={handleSubmit} className="space-y-4">
-
           <Input
             label="Batch Name"
             name="name"
@@ -246,7 +247,6 @@ export default function CreateBatch() {
             />
           </div>
 
-          {/* ACTIONS */}
           <div className="flex flex-wrap gap-4 pt-4">
             <button
               type="submit"
@@ -276,7 +276,6 @@ export default function CreateBatch() {
               </button>
             )}
           </div>
-
         </form>
       </GlassCard>
 
@@ -321,7 +320,9 @@ const Select = ({ label, error, options, ...props }) => (
     >
       <option value="">Select</option>
       {options.map((o) => (
-        <option key={o} value={o}>{o}</option>
+        <option key={o} value={o}>
+          {o}
+        </option>
       ))}
     </select>
     {error && <p className="text-xs text-red-600 mt-1">{error}</p>}

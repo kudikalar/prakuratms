@@ -4,6 +4,8 @@ import { NavLink, useNavigate } from "react-router-dom";
 import ConfirmModal from "../../../components/ConfirmModal";
 import Toast from "../../../components/Toast";
 
+const COURSES_KEY = "PRAKURA_COURSES";
+
 /* =====================================================
    ALL COURSES – STATUS BASED (UPCOMING / ONGOING / COMPLETED)
    (PRODUCTION READY – DATE FREE)
@@ -44,7 +46,17 @@ export default function AllCourses() {
         if (!res.ok) throw new Error("Failed to fetch");
 
         const data = await res.json();
-        setCourses(Array.isArray(data.courses) ? data.courses : []);
+        const fetchedCourses = Array.isArray(data.courses)
+          ? data.courses
+          : [];
+
+        setCourses(fetchedCourses);
+
+        /* 🔥 SYNC TO SHARED STORAGE */
+        localStorage.setItem(
+          COURSES_KEY,
+          JSON.stringify(fetchedCourses)
+        );
       } catch {
         setToast({ show: true, message: "❌ Failed to load courses" });
         setCourses([]);
@@ -81,7 +93,18 @@ export default function AllCourses() {
 
       if (!res.ok) throw new Error();
 
-      setCourses((prev) => prev.filter((c) => c._id !== confirmId));
+      setCourses((prev) => {
+        const updated = prev.filter((c) => c._id !== confirmId);
+
+        /* 🔥 SYNC TO SHARED STORAGE */
+        localStorage.setItem(
+          COURSES_KEY,
+          JSON.stringify(updated)
+        );
+
+        return updated;
+      });
+
       setToast({ show: true, message: "🗑️ Course deleted successfully" });
     } catch {
       setToast({ show: true, message: "❌ Failed to delete course" });

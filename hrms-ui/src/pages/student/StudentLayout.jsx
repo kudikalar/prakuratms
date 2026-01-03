@@ -28,10 +28,13 @@ export default function StudentLayout() {
 
   /* ================= ACTIONS ================= */
 
-  const logout = useCallback(() => {
-    localStorage.clear();
-    window.location.replace("/#/login"); // HashRouter safe
-  }, []);
+const logout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("loginRole");
+  navigate("/login");
+};
+
 
   const openSidebar = useCallback(() => {
     window.dispatchEvent(

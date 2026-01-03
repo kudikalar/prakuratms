@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Toast from "../../../components/Toast";
 
 const API_URL = "http://localhost:5000/api/auth/admin/courses";
+const COURSES_KEY = "PRAKURA_COURSES";
 
 /* ================= DEFAULT FORM ================= */
 const emptyForm = {
@@ -128,6 +129,16 @@ export default function AddCourse() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
+      /* 🔥 SYNC TO SHARED STORAGE (CRITICAL FIX) */
+      const existing =
+        JSON.parse(localStorage.getItem(COURSES_KEY)) || [];
+
+      const updated = editId
+        ? existing.map((c) => (c._id === editId ? data.course : c))
+        : [...existing, data.course];
+
+      localStorage.setItem(COURSES_KEY, JSON.stringify(updated));
+
       setToast({
         show: true,
         message: editId
@@ -151,12 +162,14 @@ export default function AddCourse() {
 
   /* ================= UI ================= */
   return (
-    <div className="
-      max-w-5xl mx-auto space-y-8 animate-fadeIn
-      bg-gradient-to-br from-purple-100/70 via-indigo-100/70 to-pink-100/70
-      rounded-[32px] p-6 md:p-10
-      shadow-[0_40px_120px_rgba(80,70,200,0.25)]
-    ">
+    <div
+      className="
+        max-w-5xl mx-auto space-y-8 animate-fadeIn
+        bg-gradient-to-br from-purple-100/70 via-indigo-100/70 to-pink-100/70
+        rounded-[32px] p-6 md:p-10
+        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
+      "
+    >
       {/* HEADER */}
       <div className="flex items-center gap-4">
         <button
