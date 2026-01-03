@@ -17,10 +17,24 @@ const BATCHES_KEY = "batches";
 /* ================= DEFAULT ================= */
 const emptyStudent = {
   id: null,
+  studentCode: "",
   name: "",
   email: "",
   courseId: "",
   batchId: "",
+};
+
+/* ================= STUDENT CODE GENERATOR ================= */
+const generateStudentCode = (students = []) => {
+  const prefix = "PKR-STU-";
+  const lastNumber =
+    students
+      .map((s) => s.studentCode)
+      .filter(Boolean)
+      .map((c) => parseInt(c.replace(prefix, ""), 10))
+      .sort((a, b) => b - a)[0] || 0;
+
+  return `${prefix}${String(lastNumber + 1).padStart(4, "0")}`;
 };
 
 export default function Students() {
@@ -30,17 +44,18 @@ export default function Students() {
   const [form, setForm] = useState(emptyStudent);
   const [toast, setToast] = useState({ show: false, message: "" });
 
-  /* ================= LOAD + NORMALIZE ================= */
+  /* ================= LOAD DATA ================= */
   useEffect(() => {
     const users = JSON.parse(localStorage.getItem(USERS_KEY)) || {
       students: [],
     };
+
     const coursesLS =
       JSON.parse(localStorage.getItem(COURSES_KEY)) || [];
     const batchesLS =
       JSON.parse(localStorage.getItem(BATCHES_KEY)) || [];
 
-    // normalize old batches
+    // normalize old batches (safety)
     const normalizedBatches = batchesLS.map((b) => {
       if (b.courseId) return b;
       const course = coursesLS.find((c) => c.title === b.course);
@@ -71,7 +86,7 @@ export default function Students() {
     );
   }, [form.courseId, batches]);
 
-  /* ================= SAVE ================= */
+  /* ================= SAVE STUDENT ================= */
   const saveStudent = () => {
     if (!form.name || !form.email || !form.courseId || !form.batchId) {
       setToast({ show: true, message: "❌ All fields required" });
@@ -83,7 +98,24 @@ export default function Students() {
         students: [],
       };
 
-    const updated = [...users.students, { ...form, id: Date.now() }];
+    // prevent duplicate email
+    const exists = users.students.some(
+      (s) => s.email.toLowerCase() === form.email.toLowerCase()
+    );
+    if (exists) {
+      setToast({ show: true, message: "⚠️ Email already exists" });
+      return;
+    }
+
+    const studentCode = generateStudentCode(users.students);
+
+    const newStudent = {
+      ...form,
+      id: Date.now(),
+      studentCode, // ✅ PERMANENT UNIQUE CODE
+    };
+
+    const updated = [...users.students, newStudent];
     users.students = updated;
 
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
@@ -93,7 +125,7 @@ export default function Students() {
     setToast({ show: true, message: "✅ Student added successfully" });
   };
 
-  /* ================= DELETE ================= */
+  /* ================= DELETE STUDENT ================= */
   const deleteStudent = (id) => {
     const users =
       JSON.parse(localStorage.getItem(USERS_KEY)) || {
@@ -113,7 +145,7 @@ export default function Students() {
   return (
     <div className="max-w-6xl mx-auto space-y-8">
 
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
       <div>
         <h2 className="text-2xl font-bold text-slate-800">Students</h2>
         <p className="text-sm text-slate-600">
@@ -121,7 +153,7 @@ export default function Students() {
         </p>
       </div>
 
-      {/* ================= FORM ================= */}
+      {/* FORM */}
       <div className="bg-white/50 backdrop-blur-2xl border border-white/40 rounded-3xl p-6 shadow-xl">
         <div className="grid md:grid-cols-5 gap-4 items-end">
 
@@ -168,20 +200,14 @@ export default function Students() {
 
           <button
             onClick={saveStudent}
-            className="
-              h-[46px] flex items-center justify-center gap-2
-              rounded-full font-semibold text-white
-              bg-gradient-to-r from-purple-600 to-indigo-600
-              hover:from-purple-700 hover:to-indigo-700
-              shadow-lg transition
-            "
+            className="h-[46px] flex items-center justify-center gap-2 rounded-full font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-lg transition"
           >
             <FaPlus /> Add
           </button>
         </div>
       </div>
 
-      {/* ================= STUDENT LIST ================= */}
+      {/* STUDENT LIST */}
       <div className="bg-white/50 backdrop-blur-2xl border border-white/40 rounded-3xl p-6 shadow-xl">
         <h3 className="font-semibold text-slate-800 mb-4">
           Saved Students
@@ -195,6 +221,7 @@ export default function Students() {
           <table className="w-full text-sm">
             <thead className="bg-white/60">
               <tr>
+                <th className="px-3 py-2 text-left">Student Code</th>
                 <th className="px-3 py-2 text-left">Name</th>
                 <th className="px-3 py-2 text-left">Email</th>
                 <th className="px-3 py-2 text-left">Course</th>
@@ -205,6 +232,9 @@ export default function Students() {
             <tbody>
               {students.map((s) => (
                 <tr key={s.id} className="border-b hover:bg-white/40">
+                  <td className="px-3 py-2 font-semibold text-indigo-600">
+                    {s.studentCode}
+                  </td>
                   <td className="px-3 py-2 font-medium text-purple-700">
                     {s.name}
                   </td>
