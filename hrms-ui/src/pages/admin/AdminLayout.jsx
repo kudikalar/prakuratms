@@ -44,30 +44,24 @@ export default function AdminLayout() {
 
   /* ================= ACTIONS ================= */
 
-const logout = () => {
-  // ❌ remove only auth-related keys
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  localStorage.removeItem("role");
+  const logout = () => {
+    // 🔐 Clear ONLY auth-related keys
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
 
-  // ✅ DO NOT TOUCH app data
-  // PRAKURA_COURSES
-  // users
-  // batches
-  // batchAllocations
+    // ✅ HARD redirect (HashRouter SAFE – PRODUCTION)
+    window.location.href = window.location.origin + "/#/";
+  };
 
-  navigate("/login");
-};
+  /* ================= MOBILE SIDEBAR ================= */
 
-
-  /** 🔥 FIX: Mobile sidebar trigger */
   const openSidebar = () => {
     window.dispatchEvent(new CustomEvent("OPEN_ADMIN_SIDEBAR"));
   };
 
   /* ================= UX FIXES ================= */
 
-  // Lock body scroll when sidebar is open (mobile)
   useEffect(() => {
     const lockScroll = () => {
       document.body.style.overflow = "hidden";
@@ -88,40 +82,39 @@ const logout = () => {
   /* ================= UI ================= */
 
   return (
-    <div className="flex h-screen overflow-hidden relative bg-gradient-to-br from-purple-200 via-pink-100 to-indigo-200">
-      {/* Ambient Glow */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-400/30 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 -right-40 w-96 h-96 bg-pink-400/30 rounded-full blur-3xl pointer-events-none" />
+    <div className="flex h-screen overflow-hidden relative bg-gradient-to-br from-orange-100 via-amber-50 to-pink-100">
+      {/* AMBIENT GLOW */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-orange-400/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 -right-40 w-96 h-96 bg-amber-400/30 rounded-full blur-3xl pointer-events-none" />
 
       {/* SIDEBAR */}
       <AdminSidebar />
 
-      {/* MAIN WRAPPER */}
+      {/* MAIN */}
       <div className="flex flex-col flex-1 relative z-10 overflow-hidden">
         {/* HEADER */}
         <header
           className="
             shrink-0 flex items-center justify-between
             px-4 md:px-8 py-4
-            bg-white/60 backdrop-blur-2xl
-            border-b border-white/40
-            shadow-[0_30px_90px_rgba(0,0,0,0.2)]
+            bg-white/75 backdrop-blur-2xl
+            border-b border-white/60
+            shadow-[0_25px_70px_rgba(0,0,0,0.18)]
           "
         >
           {/* LEFT */}
           <div className="flex items-center gap-4">
-            {/* MOBILE MENU BUTTON */}
             <button
               onClick={openSidebar}
               className="
                 md:hidden p-2 rounded-full
-                bg-white/70 backdrop-blur
-                border border-white/50
-                hover:bg-purple-100 transition
+                bg-white/80 backdrop-blur
+                border border-white/60
+                hover:bg-orange-100 transition
               "
               aria-label="Open sidebar"
             >
-              <FaBars className="text-purple-700" />
+              <FaBars className="text-orange-700" />
             </button>
 
             <div>
@@ -136,38 +129,42 @@ const logout = () => {
 
           {/* RIGHT */}
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* Notifications */}
+            {/* NOTIFICATIONS */}
             <button
               className="
                 relative p-2 rounded-full
-                bg-white/70 backdrop-blur
-                border border-white/50
-                hover:bg-purple-100 transition
+                bg-white/80 backdrop-blur
+                border border-white/60
+                hover:bg-orange-100 transition
               "
               title="Notifications"
             >
-              <FaBell className="text-purple-700" />
+              <FaBell className="text-orange-700" />
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full" />
             </button>
 
-            {/* Role */}
-            <div className="
-              hidden sm:flex items-center gap-2
-              bg-white/70 px-3 py-1.5 rounded-full
-              border border-white/50
-            ">
-              <FaUserShield className="text-purple-700" />
+            {/* ROLE */}
+            <div
+              className="
+                hidden sm:flex items-center gap-2
+                bg-white/80 px-3 py-1.5 rounded-full
+                border border-white/60
+              "
+            >
+              <FaUserShield className="text-orange-700" />
               <span className="text-sm font-medium text-slate-800">
                 {role}
               </span>
             </div>
 
-            {/* User */}
-            <div className="
-              hidden md:flex items-center gap-2
-              bg-white/70 px-3 py-1.5 rounded-full
-              border border-white/50
-            ">
+            {/* USER */}
+            <div
+              className="
+                hidden md:flex items-center gap-2
+                bg-white/80 px-3 py-1.5 rounded-full
+                border border-white/60
+              "
+            >
               <img
                 src="https://i.pravatar.cc/40?img=12"
                 className="w-8 h-8 rounded-full"
@@ -178,14 +175,14 @@ const logout = () => {
               </span>
             </div>
 
-            {/* Logout */}
+            {/* LOGOUT */}
             <button
               onClick={logout}
               className="
                 flex items-center gap-2
                 px-4 py-2 rounded-full
-                bg-gradient-to-r from-red-500 to-pink-500
-                hover:from-red-600 hover:to-pink-600
+                bg-gradient-to-r from-orange-500 to-pink-500
+                hover:from-orange-600 hover:to-pink-600
                 text-white text-sm font-semibold
                 shadow-lg transition
               "

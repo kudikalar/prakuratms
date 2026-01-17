@@ -4,12 +4,18 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Toast from "../../../components/Toast";
 
 const COURSES_KEY = "PRAKURA_COURSES";
+const BATCHES_KEY = "batches";
+
+/* ================= HELPERS ================= */
+
+const normalizeId = (v) => (v == null ? "" : String(v));
 
 /* ================= DEFAULT FORM ================= */
 
 const emptyForm = {
+  id: null,
   name: "",
-  course: "",
+  courseId: "",       // ✅ FIXED (was course)
   startDate: "",
   endDate: "",
   status: "Upcoming",
@@ -37,21 +43,33 @@ export default function CreateBatch() {
 
   /* ================= LOAD BATCH FOR EDIT ================= */
   useEffect(() => {
-    if (editId) {
-      const batches =
-        JSON.parse(localStorage.getItem("batches")) || [];
-      const batch = batches.find(
-        (b) => b.id === Number(editId)
-      );
-      if (batch) setForm(batch);
+    if (!editId) return;
+
+    const batches =
+      JSON.parse(localStorage.getItem(BATCHES_KEY)) || [];
+
+    const batch = batches.find(
+      (b) => normalizeId(b.id) === normalizeId(editId)
+    );
+
+    if (batch) {
+      setForm({
+        ...batch,
+        id: normalizeId(batch.id),
+        courseId:
+          typeof batch.courseId === "object"
+            ? normalizeId(batch.courseId._id)
+            : normalizeId(batch.courseId || batch.course), // backward safe
+      });
     }
   }, [editId]);
 
   /* ================= VALIDATION ================= */
+
   const validate = (data = form) => {
     const e = {};
     const batches =
-      JSON.parse(localStorage.getItem("batches")) || [];
+      JSON.parse(localStorage.getItem(BATCHES_KEY)) || [];
 
     if (!data.name.trim()) {
       e.name = "Batch name is required";
@@ -61,12 +79,12 @@ export default function CreateBatch() {
       const exists = batches.some(
         (b) =>
           b.name.toLowerCase() === data.name.toLowerCase() &&
-          String(b.id) !== String(editId)
+          normalizeId(b.id) !== normalizeId(editId)
       );
       if (exists) e.name = "Batch name already exists";
     }
 
-    if (!data.course) e.course = "Please select a course";
+    if (!data.courseId) e.courseId = "Please select a course";
     if (!data.startDate) e.startDate = "Start date is required";
     if (!data.endDate) e.endDate = "End date is required";
 
@@ -84,8 +102,10 @@ export default function CreateBatch() {
   }, [form]);
 
   /* ================= HANDLERS ================= */
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     let updated = { ...form, [name]: value };
 
     if (name === "startDate" || name === "endDate") {
@@ -110,6 +130,7 @@ export default function CreateBatch() {
   };
 
   /* ================= SUBMIT ================= */
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -117,48 +138,56 @@ export default function CreateBatch() {
     setErrors(validationErrors);
     setTouched({
       name: true,
-      course: true,
+      courseId: true,
       startDate: true,
       endDate: true,
     });
 
     if (Object.keys(validationErrors).length > 0) {
-      setToast({ show: true, message: "❌ Please fix validation errors" });
+      setToast({
+        show: true,
+        message: "❌ Please fix validation errors",
+      });
       return;
     }
 
     const batches =
-      JSON.parse(localStorage.getItem("batches")) || [];
+      JSON.parse(localStorage.getItem(BATCHES_KEY)) || [];
 
     if (editId) {
       const updated = batches.map((b) =>
-        b.id === Number(editId)
+        normalizeId(b.id) === normalizeId(editId)
           ? { ...form, id: b.id }
           : b
       );
-      localStorage.setItem("batches", JSON.stringify(updated));
+
+      localStorage.setItem(BATCHES_KEY, JSON.stringify(updated));
       setToast({ show: true, message: "✅ Batch updated successfully" });
     } else {
+      const newBatch = {
+        ...form,
+        id: Date.now().toString(),
+      };
+
       localStorage.setItem(
-        "batches",
-        JSON.stringify([...batches, { ...form, id: Date.now() }])
+        BATCHES_KEY,
+        JSON.stringify([...batches, newBatch])
       );
       setToast({ show: true, message: "🎉 Batch created successfully" });
     }
 
-    setTimeout(() => navigate("/admin/batches"), 1500);
+    setTimeout(() => navigate("/admin/batches"), 1200);
   };
 
   /* ================= UI ================= */
+
   return (
-    <div
-      className="
-        max-w-5xl mx-auto space-y-8 animate-fadeIn
-        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
-        rounded-[32px] p-6 md:p-8
-        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
-      "
-    >
+    <div className="
+      max-w-5xl mx-auto space-y-8 animate-fadeIn
+      bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
+      rounded-[32px] p-6 md:p-8
+      shadow-[0_40px_120px_rgba(80,70,200,0.25)]
+    ">
       {/* HEADER */}
       <div className="flex items-center gap-4">
         <button
@@ -193,12 +222,15 @@ export default function CreateBatch() {
 
           <Select
             label="Course"
-            name="course"
-            value={form.course}
+            name="courseId"
+            value={form.courseId}
             onChange={handleChange}
-            onBlur={() => setTouched((t) => ({ ...t, course: true }))}
-            error={touched.course && errors.course}
-            options={courses.map((c) => c.title)}
+            onBlur={() => setTouched((t) => ({ ...t, courseId: true }))}
+            error={touched.courseId && errors.courseId}
+            options={courses.map((c) => ({
+              value: normalizeId(c._id),
+              label: c.title,
+            }))}
           />
 
           <div className="grid md:grid-cols-2 gap-4">
@@ -208,9 +240,7 @@ export default function CreateBatch() {
               name="startDate"
               value={form.startDate}
               onChange={handleChange}
-              onBlur={() =>
-                setTouched((t) => ({ ...t, startDate: true }))
-              }
+              onBlur={() => setTouched((t) => ({ ...t, startDate: true }))}
               error={touched.startDate && errors.startDate}
             />
 
@@ -220,9 +250,7 @@ export default function CreateBatch() {
               name="endDate"
               value={form.endDate}
               onChange={handleChange}
-              onBlur={() =>
-                setTouched((t) => ({ ...t, endDate: true }))
-              }
+              onBlur={() => setTouched((t) => ({ ...t, endDate: true }))}
               error={touched.endDate && errors.endDate}
             />
           </div>
@@ -232,7 +260,11 @@ export default function CreateBatch() {
             name="status"
             value={form.status}
             onChange={handleChange}
-            options={["Upcoming", "Ongoing", "Completed"]}
+            options={[
+              { value: "Upcoming", label: "Upcoming" },
+              { value: "Ongoing", label: "Ongoing" },
+              { value: "Completed", label: "Completed" },
+            ]}
           />
 
           <div>
@@ -291,7 +323,12 @@ export default function CreateBatch() {
 /* ================= SHARED UI ================= */
 
 const GlassCard = ({ children }) => (
-  <div className="bg-white/40 backdrop-blur-[24px] border border-white/40 rounded-3xl p-6 shadow-[0_30px_90px_rgba(0,0,0,0.2)]">
+  <div className="
+    bg-white/40 backdrop-blur-[24px]
+    border border-white/40
+    rounded-3xl p-6
+    shadow-[0_30px_90px_rgba(0,0,0,0.2)]
+  ">
     {children}
   </div>
 );
@@ -320,8 +357,8 @@ const Select = ({ label, error, options, ...props }) => (
     >
       <option value="">Select</option>
       {options.map((o) => (
-        <option key={o} value={o}>
-          {o}
+        <option key={o.value} value={o.value}>
+          {o.label}
         </option>
       ))}
     </select>

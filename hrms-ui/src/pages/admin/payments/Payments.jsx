@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   FaWhatsapp,
   FaEdit,
-  FaCheck,
-  FaTimes,
 } from "react-icons/fa";
 
 /* ================= CONFIG ================= */
@@ -89,11 +87,9 @@ export default function Payments() {
         batchId: s.batchId,
         courseName: course?.title || "—",
         batchName: batch?.name || "—",
-        batchStatus: batch?.status || "RUNNING",
         total,
         paid,
         due,
-        lastPayment: p.lastPayment || "—",
         status,
       };
     });
@@ -147,12 +143,14 @@ export default function Payments() {
 
   /* ================= UI ================= */
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-24">
+    <div className="relative max-w-7xl mx-auto space-y-10 pb-28 text-slate-100 animate-fadeIn">
+      {/* Ambient Glow */}
+      <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 -right-40 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
+
       {/* HEADER */}
-      <div>
-        <h2 className="text-2xl font-bold text-slate-800">
-          Payments Overview
-        </h2>
+      <div className="glass-panel bg-white/70 text-slate-900 shadow-[0_40px_120px_rgba(99,102,241,0.35)]">
+        <h2 className="text-2xl font-bold">Payments Overview</h2>
         <p className="text-sm text-slate-600">
           Course & batch wise fee tracking
         </p>
@@ -160,7 +158,7 @@ export default function Payments() {
 
       {/* FILTERS */}
       <GlassCard>
-        <div className="grid md:grid-cols-3 gap-4 text-sm">
+        <div className="grid md:grid-cols-3 gap-4">
           <select
             value={courseFilter}
             onChange={(e) => {
@@ -207,125 +205,85 @@ export default function Payments() {
               setBatchFilter("ALL");
               setPage(1);
             }}
-            className="bg-white/60 rounded-xl px-4"
+            className="btn-secondary"
           >
-            Reset
+            Reset Filters
           </button>
         </div>
       </GlassCard>
 
       {/* TABLE */}
       <GlassCard>
-        <table className="w-full text-sm">
-          <thead className="border-b">
-            <tr>
-              <th>Student</th>
-              <th>Course</th>
-              <th>Batch</th>
-              <th>Total</th>
-              <th>Paid</th>
-              <th>Due</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {paginated.map((s) => (
-              <tr key={s.id} className="border-b">
-                <td>{s.name}</td>
-                <td>{s.courseName}</td>
-                <td>{s.batchName}</td>
-                <td>₹{s.total}</td>
-                <td className="text-emerald-600">₹{s.paid}</td>
-                <td className="text-red-600">₹{s.due}</td>
-                <td>
-                  <StatusBadge status={s.status} />
-                </td>
-                <td className="flex gap-3">
-                  <button
-                    onClick={() => setSelectedStudent(s)}
-                    className="text-purple-600"
-                  >
-                    Add
-                  </button>
-                  {s.status !== "PAID" && (
-                    <button
-                      onClick={() => sendWhatsAppReminder(s)}
-                      className="text-green-600"
-                    >
-                      <FaWhatsapp />
-                    </button>
-                  )}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-slate-900">
+            <thead className="bg-slate-200/70 uppercase text-xs text-slate-700">
+              <tr>
+                <th className="text-left py-3 px-2">Student</th>
+                <th>Course</th>
+                <th>Batch</th>
+                <th>Total</th>
+                <th>Paid</th>
+                <th>Due</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
 
-        <div className="mt-6 flex justify-between font-semibold text-sm">
+            <tbody>
+              {paginated.map((s) => (
+                <tr
+                  key={s.id}
+                  className="border-b border-white/40 hover:bg-indigo-100/40 transition"
+                >
+                  <td className="py-3 font-medium">{s.name}</td>
+                  <td>{s.courseName}</td>
+                  <td>{s.batchName}</td>
+                  <td>₹{s.total}</td>
+                  <td className="text-emerald-600 font-bold">
+                    ₹{s.paid}
+                  </td>
+                  <td className="text-rose-600 font-bold">
+                    ₹{s.due}
+                  </td>
+                  <td>
+                    <StatusBadge status={s.status} />
+                  </td>
+                  <td className="flex gap-3">
+                    <button
+                      onClick={() => setSelectedStudent(s)}
+                      className="px-3 py-1 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700"
+                    >
+                      Add
+                    </button>
+                    {s.status !== "PAID" && (
+                      <button
+                        onClick={() => sendWhatsAppReminder(s)}
+                        className="text-green-600 hover:scale-110 transition"
+                      >
+                        <FaWhatsapp />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* TOTALS */}
+        <div className="mt-6 flex justify-between bg-slate-100/70 rounded-xl p-4 text-sm font-bold text-slate-800">
           <span>Total: ₹{totalFee}</span>
           <span className="text-emerald-600">
             Collected: ₹{totalPaid}
           </span>
-          <span className="text-red-600">
+          <span className="text-rose-600">
             Pending: ₹{totalDue}
           </span>
         </div>
       </GlassCard>
 
-      {/* RUNNING BATCH SUMMARY */}
-      <GlassCard>
-        <h3 className="font-semibold mb-4">
-          Running Batches – Payment Summary
-        </h3>
-
-        <table className="w-full text-sm">
-          <thead className="border-b">
-            <tr>
-              <th>Batch</th>
-              <th>Students</th>
-              <th>Collected</th>
-              <th>Pending</th>
-            </tr>
-          </thead>
-          <tbody>
-            {batches
-              .filter((b) => b.status === "RUNNING")
-              .map((b) => {
-                const batchStudents = rows.filter(
-                  (r) => r.batchId === (b._id || b.id)
-                );
-                const collected = batchStudents.reduce(
-                  (a, s) => a + s.paid,
-                  0
-                );
-                const due = batchStudents.reduce(
-                  (a, s) => a + s.due,
-                  0
-                );
-
-                return (
-                  <tr key={b._id || b.id} className="border-b">
-                    <td>{b.name}</td>
-                    <td className="text-center">
-                      {batchStudents.length}
-                    </td>
-                    <td className="text-emerald-600 text-center">
-                      ₹{collected}
-                    </td>
-                    <td className="text-red-600 text-center">
-                      ₹{due}
-                    </td>
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
-      </GlassCard>
-
       {/* PAGINATION */}
-      <div className="flex justify-between items-center text-sm">
+      <div className="flex justify-between items-center text-sm text-slate-300">
         <span>
           Showing {start + 1}–
           {Math.min(start + PAGE_SIZE, filteredRows.length)} of{" "}
@@ -338,8 +296,8 @@ export default function Payments() {
               onClick={() => setPage(i + 1)}
               className={`px-3 py-1 rounded-lg ${
                 page === i + 1
-                  ? "bg-purple-600 text-white"
-                  : "bg-white/60"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-white/60 text-slate-900"
               }`}
             >
               {i + 1}
@@ -363,7 +321,7 @@ export default function Payments() {
 
 function GlassCard({ children }) {
   return (
-    <div className="bg-white/40 backdrop-blur-xl border border-white/40 rounded-3xl p-6 shadow">
+    <div className="bg-white/60 backdrop-blur-2xl border border-white/50 rounded-3xl p-6 shadow-[0_25px_80px_rgba(0,0,0,0.25)]">
       {children}
     </div>
   );
@@ -374,10 +332,10 @@ function StatusBadge({ status }) {
     <span
       className={`px-3 py-1 rounded-full text-xs font-semibold ${
         status === "PAID"
-          ? "bg-green-200 text-green-800"
+          ? "bg-emerald-100 text-emerald-800 shadow-[0_0_20px_rgba(16,185,129,0.6)]"
           : status === "OVERDUE"
-          ? "bg-red-200 text-red-800"
-          : "bg-yellow-200 text-yellow-800"
+          ? "bg-rose-100 text-rose-800 shadow-[0_0_20px_rgba(244,63,94,0.6)]"
+          : "bg-amber-100 text-amber-800 shadow-[0_0_20px_rgba(251,191,36,0.6)]"
       }`}
     >
       {status}
@@ -396,9 +354,9 @@ function AddPaymentModal({ student, onClose, onSave }) {
   const due = total - student.paid;
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-      <div className="bg-white w-96 rounded-3xl p-6 space-y-4">
-        <h3 className="font-semibold">Add Payment</h3>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="bg-white/90 backdrop-blur-2xl w-96 rounded-3xl p-6 space-y-4 shadow-2xl">
+        <h3 className="font-semibold text-lg">Add Payment</h3>
 
         <div className="text-sm space-y-2">
           <Row label="Total Fee">
@@ -409,6 +367,7 @@ function AddPaymentModal({ student, onClose, onSave }) {
                 type="number"
                 value={total}
                 onChange={(e) => setTotal(Number(e.target.value))}
+                className="glass-input w-24"
               />
             )}
             <button onClick={() => setEditingTotal(!editingTotal)}>
@@ -417,13 +376,15 @@ function AddPaymentModal({ student, onClose, onSave }) {
           </Row>
 
           <Row label="Paid">
-            <span className="text-emerald-600">
+            <span className="text-emerald-600 font-bold">
               ₹{student.paid}
             </span>
           </Row>
 
           <Row label="Due">
-            <span className="text-red-600">₹{due}</span>
+            <span className="text-rose-600 font-bold">
+              ₹{due}
+            </span>
           </Row>
         </div>
 
@@ -445,8 +406,10 @@ function AddPaymentModal({ student, onClose, onSave }) {
           <option>Card</option>
         </select>
 
-        <div className="flex justify-end gap-3">
-          <button onClick={onClose}>Cancel</button>
+        <div className="flex justify-end gap-3 pt-2">
+          <button onClick={onClose} className="btn-secondary">
+            Cancel
+          </button>
           <button
             onClick={() =>
               onSave({
@@ -457,9 +420,9 @@ function AddPaymentModal({ student, onClose, onSave }) {
                 date: new Date().toISOString().slice(0, 10),
               })
             }
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg"
+            className="btn-primary"
           >
-            Save
+            Save Payment
           </button>
         </div>
       </div>
@@ -469,9 +432,9 @@ function AddPaymentModal({ student, onClose, onSave }) {
 
 function Row({ label, children }) {
   return (
-    <div className="flex justify-between items-center">
-      <span>{label}</span>
-      {children}
+    <div className="flex justify-between items-center gap-4">
+      <span className="text-slate-600">{label}</span>
+      <div className="flex items-center gap-2">{children}</div>
     </div>
   );
 }

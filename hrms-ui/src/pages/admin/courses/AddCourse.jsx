@@ -3,10 +3,14 @@ import { FaArrowLeft, FaSave, FaEraser } from "react-icons/fa";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Toast from "../../../components/Toast";
 
+/* ================= CONFIG ================= */
+
 const API_URL = "http://localhost:5000/api/auth/admin/courses";
 const COURSES_KEY = "PRAKURA_COURSES";
+const CATEGORY_KEY = "PRAKURA_COURSE_CATEGORIES";
 
 /* ================= DEFAULT FORM ================= */
+
 const emptyForm = {
   title: "",
   category: "",
@@ -23,38 +27,78 @@ export default function AddCourse() {
   const editId = params.get("id");
 
   const [form, setForm] = useState(emptyForm);
+  const [categories, setCategories] = useState([]);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [toast, setToast] = useState({ show: false, message: "" });
   const [loading, setLoading] = useState(false);
 
+  /* ================= HANDLERS ================= */
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+  };
+
+  const clearForm = () => {
+    setForm(emptyForm);
+    setTouched({});
+    setErrors({});
+  };
+
+  /* ================= LOAD CATEGORIES ================= */
+
+  useEffect(() => {
+    const readCategories = () => {
+      const raw = JSON.parse(localStorage.getItem(CATEGORY_KEY)) || [];
+
+      const normalized = raw
+        .map((c) =>
+          typeof c === "string"
+            ? { name: c, status: "Active" }
+            : { name: c.name, status: c.status ?? "Active" }
+        )
+        .filter((c) => c.status === "Active");
+
+      setCategories(normalized);
+    };
+
+    readCategories();
+    window.addEventListener("storage", readCategories);
+    window.addEventListener("focus", readCategories);
+    document.addEventListener("visibilitychange", readCategories);
+
+    return () => {
+      window.removeEventListener("storage", readCategories);
+      window.removeEventListener("focus", readCategories);
+      document.removeEventListener("visibilitychange", readCategories);
+    };
+  }, []);
+
   /* ================= LOAD COURSE (EDIT MODE) ================= */
+
   useEffect(() => {
     if (!editId) return;
 
     const loadCourse = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(API_URL, {
+        const res = await fetch(`${API_URL}/${editId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
+        const data = await res.json();
         if (!res.ok) throw new Error();
 
-        const data = await res.json();
-        const course = data.courses?.find((c) => c._id === editId);
-
-        if (course) {
-          setForm({
-            title: course.title || "",
-            category: course.category || "",
-            duration: course.duration || "",
-            description: course.description || "",
-            level: course.level || "",
-            mode: course.mode || "",
-            price: course.price ?? "",
-          });
-        }
+        setForm({
+          title: data.course.title || "",
+          category: data.course.category || "",
+          duration: data.course.duration || "",
+          description: data.course.description || "",
+          level: data.course.level || "",
+          mode: data.course.mode || "",
+          price: data.course.price ?? "",
+        });
       } catch {
         setToast({ show: true, message: "❌ Failed to load course" });
       }
@@ -64,32 +108,25 @@ export default function AddCourse() {
   }, [editId]);
 
   /* ================= VALIDATION ================= */
-  const validate = (data = form) => {
+
+  const validate = () => {
     const e = {};
-    if (!data.title.trim()) e.title = "Course title is required";
-    if (!data.category.trim()) e.category = "Category is required";
-    if (!data.duration.trim()) e.duration = "Duration is required";
-    if (!data.level) e.level = "Select course level";
-    if (!data.mode) e.mode = "Select course mode";
-    if (data.price !== "" && isNaN(Number(data.price)))
-      e.price = "Price must be numeric";
+    if (!form.title.trim()) e.title = "Course title required";
+    if (!form.category) e.category = "Select category";
+    if (!form.duration) e.duration = "Duration required";
+    if (!form.level) e.level = "Select level";
+    if (!form.mode) e.mode = "Select mode";
+    if (form.price && isNaN(Number(form.price))) e.price = "Invalid price";
     return e;
   };
 
-  useEffect(() => {
-    setErrors(validate());
-  }, [form]);
-
-  /* ================= HANDLERS ================= */
-  const handleChange = (e) =>
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  /* ================= SUBMIT ================= */
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return;
 
-    const validationErrors = validate();
-    setErrors(validationErrors);
+    const v = validate();
+    setErrors(v);
     setTouched({
       title: true,
       category: true,
@@ -99,39 +136,28 @@ export default function AddCourse() {
       price: true,
     });
 
-    if (Object.keys(validationErrors).length > 0) return;
+    if (Object.keys(v).length) return;
 
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      const payload = {
-        ...form,
-        title: form.title.trim(),
-        category: form.category.trim(),
-        duration: form.duration.trim(),
-        description: form.description.trim(),
-        price: form.price === "" ? 0 : Number(form.price),
-      };
-
-      const res = await fetch(
-        editId ? `${API_URL}/${editId}` : API_URL,
-        {
-          method: editId ? "PUT" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(editId ? `${API_URL}/${editId}` : API_URL, {
+        method: editId ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...form,
+          price: form.price === "" ? 0 : Number(form.price),
+        }),
+      });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      /* 🔥 SYNC TO SHARED STORAGE (CRITICAL FIX) */
-      const existing =
-        JSON.parse(localStorage.getItem(COURSES_KEY)) || [];
+      const existing = JSON.parse(localStorage.getItem(COURSES_KEY)) || [];
 
       const updated = editId
         ? existing.map((c) => (c._id === editId ? data.course : c))
@@ -147,51 +173,70 @@ export default function AddCourse() {
       });
 
       setTimeout(() => navigate("/admin/courses"), 1200);
-    } catch (err) {
-      setToast({ show: true, message: err.message || "❌ Save failed" });
+    } catch {
+      setToast({ show: true, message: "❌ Save failed" });
     } finally {
       setLoading(false);
     }
   };
 
-  const clearForm = () => {
-    setForm(emptyForm);
-    setTouched({});
-    setErrors({});
-  };
-
   /* ================= UI ================= */
+
   return (
-    <div
-      className="
-        max-w-5xl mx-auto space-y-8 animate-fadeIn
-        bg-gradient-to-br from-purple-100/70 via-indigo-100/70 to-pink-100/70
-        rounded-[32px] p-6 md:p-10
-        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
-      "
-    >
+    <div className="
+      relative max-w-5xl mx-auto p-5 md:p-8 space-y-10
+      animate-fadeIn
+      bg-gradient-to-br from-slate-100 via-indigo-100 to-violet-100
+      rounded-[36px]
+      shadow-[0_45px_140px_rgba(79,70,229,0.35)]
+    ">
+      {/* Ambient glow */}
+      <div className="pointer-events-none absolute -top-32 -left-32 w-96 h-96 bg-indigo-400/25 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 -right-32 w-96 h-96 bg-purple-400/25 rounded-full blur-3xl" />
+
       {/* HEADER */}
-      <div className="flex items-center gap-4">
+      <div className="
+        glass-panel relative z-10
+        flex items-center gap-4
+        bg-white/70 backdrop-blur-2xl
+        border border-white/60
+        rounded-3xl p-5
+        shadow-[0_25px_90px_rgba(0,0,0,0.18)]
+      ">
         <button
           onClick={() => navigate("/admin/courses")}
-          className="p-3 rounded-full bg-white/60 backdrop-blur border border-white/40 hover:scale-105 transition"
+          className="
+            p-3 rounded-full
+            bg-white/80 hover:bg-white
+            shadow transition
+          "
         >
           <FaArrowLeft />
         </button>
 
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">
+          <h2 className="
+            text-2xl md:text-3xl font-bold
+            bg-gradient-to-r from-indigo-700 to-purple-700
+            bg-clip-text text-transparent
+          ">
             {editId ? "Edit Course" : "Add New Course"}
           </h2>
-          <p className="text-sm text-slate-600">
-            Manage course details and training configuration
+          <p className="text-sm text-slate-600 mt-1">
+            Configure course details and delivery
           </p>
         </div>
       </div>
 
       {/* FORM */}
-      <GlassCard>
-        <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="
+        glass-card relative z-10
+        bg-white/75 backdrop-blur-2xl
+        border border-white/60
+        rounded-3xl p-8
+        shadow-[0_35px_120px_rgba(0,0,0,0.22)]
+      ">
+        <form onSubmit={handleSubmit} className="space-y-10">
           <div className="grid md:grid-cols-2 gap-6">
             <FloatingInput
               label="Course Title"
@@ -200,11 +245,13 @@ export default function AddCourse() {
               onChange={handleChange}
               error={touched.title && errors.title}
             />
-            <FloatingInput
+
+            <FloatingSelect
               label="Category"
               name="category"
               value={form.category}
               onChange={handleChange}
+              options={categories.map((c) => c.name)}
               error={touched.category && errors.category}
             />
           </div>
@@ -217,6 +264,7 @@ export default function AddCourse() {
               onChange={handleChange}
               error={touched.duration && errors.duration}
             />
+
             <FloatingInput
               label="Price (₹)"
               name="price"
@@ -232,16 +280,17 @@ export default function AddCourse() {
               name="level"
               value={form.level}
               onChange={handleChange}
-              error={touched.level && errors.level}
               options={["Beginner", "Intermediate", "Advanced"]}
+              error={touched.level && errors.level}
             />
+
             <FloatingSelect
               label="Mode"
               name="mode"
               value={form.mode}
               onChange={handleChange}
-              error={touched.mode && errors.mode}
               options={["Online", "Offline", "Hybrid"]}
+              error={touched.mode && errors.mode}
             />
           </div>
 
@@ -254,15 +303,16 @@ export default function AddCourse() {
 
           <div className="flex flex-wrap gap-4 pt-6">
             <button
-              disabled={loading}
               type="submit"
+              disabled={loading}
               className="
                 px-10 py-3 rounded-full
-                bg-gradient-to-r from-indigo-600 to-purple-600
-                hover:from-indigo-700 hover:to-purple-700
-                text-white font-semibold
-                shadow-xl transition
-                disabled:opacity-60
+                font-semibold text-white
+                bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600
+                hover:from-indigo-700 hover:via-violet-700 hover:to-purple-700
+                shadow-[0_18px_50px_rgba(79,70,229,0.55)]
+                hover:scale-[1.03]
+                transition
               "
             >
               <FaSave className="inline mr-2" />
@@ -275,18 +325,19 @@ export default function AddCourse() {
                 onClick={clearForm}
                 className="
                   px-8 py-3 rounded-full
-                  bg-white/70 backdrop-blur
-                  border border-white/50
+                  bg-white/80 border border-white/60
                   text-slate-700
-                  flex items-center gap-2
+                  hover:bg-white hover:shadow
+                  transition
                 "
               >
-                <FaEraser /> Clear
+                <FaEraser className="inline mr-2" />
+                Clear
               </button>
             )}
           </div>
         </form>
-      </GlassCard>
+      </div>
 
       <Toast
         show={toast.show}
@@ -299,58 +350,49 @@ export default function AddCourse() {
 
 /* ================= UI HELPERS ================= */
 
-const GlassCard = ({ children }) => (
-  <div className="
-    bg-white/35 backdrop-blur-[28px]
-    border border-white/40 rounded-3xl p-8
-    shadow-[0_30px_90px_rgba(0,0,0,0.2)]
-  ">
-    {children}
-  </div>
-);
-
-const FloatingInput = ({ label, error, value, ...props }) => (
+const FloatingInput = ({ label, error, ...props }) => (
   <div className="relative">
     <input
       {...props}
-      value={value}
       placeholder=" "
       className="
-        peer w-full px-4 pt-6 pb-2 rounded-xl
-        bg-white/40 backdrop-blur-xl
-        border border-white/40
-        text-slate-800
-        focus:outline-none focus:ring-2 focus:ring-indigo-400/50
+        peer glass-input pt-6
+        focus:ring-2 focus:ring-indigo-500/50
+        transition
       "
     />
     <label className="
-      absolute left-4 top-2 text-xs text-slate-600
-      peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm
-      peer-focus:top-2 peer-focus:text-xs peer-focus:text-indigo-600
+      absolute left-4 top-2
+      text-xs text-slate-600
+      peer-placeholder-shown:top-4
+      peer-placeholder-shown:text-sm
       transition-all
     ">
       {label}
     </label>
-    {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+{error && (
+  <p className="mt-1 text-xs font-semibold text-red-600">
+    {error}
+  </p>
+)}
   </div>
 );
 
-const FloatingSelect = ({ label, options, value, error, ...props }) => (
+const FloatingSelect = ({ label, options, error, ...props }) => (
   <div className="relative">
     <select
       {...props}
-      value={value}
       className="
-        peer w-full px-4 pt-6 pb-2 rounded-xl
-        bg-white/40 backdrop-blur-xl
-        border border-white/40
-        text-slate-800 focus:outline-none
-        focus:ring-2 focus:ring-indigo-400/50
+        peer glass-input pt-6
+        focus:ring-2 focus:ring-indigo-500/50
+        transition
       "
     >
-      <option value="" disabled hidden />
+      <option value="" disabled />
       {options.map((o) => (
-        <option key={o} value={o}>{o}</option>
+        <option key={o} value={o}>
+          {o}
+        </option>
       ))}
     </select>
     <label className="absolute left-4 top-2 text-xs text-slate-600">
@@ -360,28 +402,27 @@ const FloatingSelect = ({ label, options, value, error, ...props }) => (
   </div>
 );
 
-const FloatingTextarea = ({ label, value, ...props }) => (
+const FloatingTextarea = ({ label, error, ...props }) => (
   <div className="relative">
     <textarea
       {...props}
-      value={value}
       rows={4}
       placeholder=" "
       className="
-        peer w-full px-4 pt-6 pb-2 rounded-xl
-        bg-white/40 backdrop-blur-xl
-        border border-white/40
-        text-slate-800 focus:outline-none
-        focus:ring-2 focus:ring-indigo-400/50
+        peer glass-input pt-6
+        focus:ring-2 focus:ring-indigo-500/50
+        transition
       "
     />
     <label className="
-      absolute left-4 top-2 text-xs text-slate-600
-      peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm
-      peer-focus:top-2 peer-focus:text-xs peer-focus:text-indigo-600
+      absolute left-4 top-2
+      text-xs text-slate-600
+      peer-placeholder-shown:top-4
+      peer-placeholder-shown:text-sm
       transition-all
     ">
       {label}
     </label>
+    {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
   </div>
 );

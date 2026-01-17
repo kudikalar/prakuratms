@@ -15,12 +15,13 @@ const getStatus = (percentage) => {
 };
 
 const getCourseNameFromBatch = (batchId, batches, courses) => {
-  const batch = batches.find(b => String(b.id) === String(batchId));
+  const batch = batches.find((b) => String(b.id) === String(batchId));
   if (!batch) return "—";
 
   if (batch.courseId) {
     return (
-      courses.find(c => String(c.id) === String(batch.courseId))?.title || "—"
+      courses.find((c) => String(c.id) === String(batch.courseId))
+        ?.title || "—"
     );
   }
 
@@ -44,26 +45,21 @@ export default function StudentAnalytics() {
   const [batches, setBatches] = useState([]);
   const [coursesMaster, setCoursesMaster] = useState([]);
 
-  /* FILTER STATE */
   const [search, setSearch] = useState("");
   const [course, setCourse] = useState("All");
   const [batch, setBatch] = useState("All");
   const [year, setYear] = useState("All");
 
-  /* ================= LOAD DATA ================= */
+  /* ================= LOAD ================= */
   useEffect(() => {
     const users = JSON.parse(localStorage.getItem("users")) || {};
     setStudents(users.students || []);
-
-    setAttendanceStore(
-      JSON.parse(localStorage.getItem("attendance")) || {}
-    );
-
+    setAttendanceStore(JSON.parse(localStorage.getItem("attendance")) || {});
     setBatches(JSON.parse(localStorage.getItem("batches")) || []);
     setCoursesMaster(JSON.parse(localStorage.getItem("courses")) || []);
   }, []);
 
-  /* ================= PROCESS ATTENDANCE ================= */
+  /* ================= PROCESS ================= */
   const processedData = useMemo(() => {
     return students
       .map((student) => {
@@ -78,33 +74,25 @@ export default function StudentAnalytics() {
           }
         });
 
-        const absent = totalDays - present;
-        const percentage =
-          totalDays > 0 ? Math.round((present / totalDays) * 100) : 0;
-
         const batchObj = batches.find(
           (b) => String(b.id) === String(student.batchId)
         );
 
-        const derivedCourse = getCourseNameFromBatch(
-          student.batchId,
-          batches,
-          coursesMaster
-        );
-
-        const derivedYear = getYearFromStudentOrBatch(
-          student,
-          batchObj
-        );
+        const percentage =
+          totalDays > 0 ? Math.round((present / totalDays) * 100) : 0;
 
         return {
           ...student,
           batch: batchObj?.name || "—",
-          course: derivedCourse,
-          year: derivedYear,
-          totalDays,
+          course: getCourseNameFromBatch(
+            student.batchId,
+            batches,
+            coursesMaster
+          ),
+          year: getYearFromStudentOrBatch(student, batchObj),
           present,
-          absent,
+          absent: totalDays - present,
+          totalDays,
           percentage,
           status: getStatus(percentage),
         };
@@ -128,19 +116,17 @@ export default function StudentAnalytics() {
     year,
   ]);
 
-  /* ================= FILTER OPTIONS ================= */
+  /* ================= OPTIONS ================= */
   const courseOptions = useMemo(
-    () => ["All", ...new Set(processedData.map(s => s.course).filter(Boolean))],
+    () => ["All", ...new Set(processedData.map((s) => s.course))],
     [processedData]
   );
-
   const batchOptions = useMemo(
-    () => ["All", ...new Set(processedData.map(s => s.batch).filter(Boolean))],
+    () => ["All", ...new Set(processedData.map((s) => s.batch))],
     [processedData]
   );
-
   const yearOptions = useMemo(
-    () => ["All", ...new Set(processedData.map(s => s.year).filter(Boolean))],
+    () => ["All", ...new Set(processedData.map((s) => s.year))],
     [processedData]
   );
 
@@ -154,48 +140,42 @@ export default function StudentAnalytics() {
     return {
       totalStudents,
       avgAttendance: Math.round(avgAttendance),
-      regularStudents: processedData.filter(
-        (s) => s.status === "Good"
-      ).length,
+      regularStudents: processedData.filter((s) => s.status === "Good").length,
     };
   }, [processedData]);
 
   return (
-    <div
-      className="
-        max-w-7xl mx-auto space-y-8 pb-24 animate-fadeIn
-        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
-        rounded-[32px] p-6 md:p-8
-        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
-      "
-    >
+    <div className="dashboard-content relative max-w-7xl mx-auto p-6 md:p-8 space-y-8 animate-fadeIn">
+      
+      {/* 🌈 Ambient glass glow (ADD-ONLY) */}
+      <div className="pointer-events-none absolute -top-32 -left-32 w-96 h-96 bg-violet-400/20 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 -right-32 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl" />
+
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">
-            Student Attendance Analytics
-          </h1>
-          <p className="text-sm text-slate-600">
-            Course • Batch • Year wise attendance insights
-          </p>
-        </div>
+      <div className="glass-panel relative z-10">
+        <h1 className="text-2xl font-semibold">
+          Student Attendance Analytics
+        </h1>
+        <p className="text-sm text-slate-600 mt-1">
+          Course, batch & year-wise attendance insights
+        </p>
 
         <input
-          placeholder="Search student..."
+          className="glass-input mt-6 max-w-sm"
+          placeholder="Search student…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="glass-input w-full md:w-72"
         />
       </div>
 
       {/* FILTERS */}
-      <GlassCard>
+      <div className="glass-card relative z-10">
         <div className="flex items-center gap-2 mb-4">
-          <FaFilter className="text-purple-600" />
-          <span className="font-semibold text-slate-700">Filters</span>
+          <FaFilter className="text-violet-600" />
+          <span className="font-semibold">Filters</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
           <Select label="Course" value={course} onChange={setCourse} options={courseOptions} />
           <Select label="Batch" value={batch} onChange={setBatch} options={batchOptions} />
           <Select label="Year" value={year} onChange={setYear} options={yearOptions} />
@@ -207,67 +187,67 @@ export default function StudentAnalytics() {
               setBatch("All");
               setYear("All");
             }}
-            className="
-              px-4 py-2 rounded-xl
-              bg-gradient-to-r from-purple-600 to-indigo-600
-              text-white font-semibold
-              hover:from-purple-700 hover:to-indigo-700
-            "
+            className="btn-primary"
           >
             Reset
           </button>
         </div>
-      </GlassCard>
+      </div>
 
       {/* SUMMARY */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 relative z-10">
         <SummaryCard icon={<FaUsers />} label="Total Students" value={summary.totalStudents} />
         <SummaryCard icon={<FaChartPie />} label="Avg Attendance" value={`${summary.avgAttendance}%`} />
         <SummaryCard icon={<FaCheckCircle />} label="Regular Students" value={summary.regularStudents} />
       </div>
 
       {/* TABLE */}
-      <GlassCard>
-        <table className="w-full text-sm">
-          <thead className="border-b text-slate-600">
-            <tr>
-              <th className="text-left py-3">Student</th>
-              <th>Course</th>
-              <th>Batch</th>
-              <th>Year</th>
-              <th>Present</th>
-              <th>Absent</th>
-              <th>%</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {processedData.map((s) => (
-              <tr key={s.id} className="border-b last:border-0">
-                <td className="py-3 font-medium">{s.name}</td>
-                <td className="text-center">{s.course}</td>
-                <td className="text-center">{s.batch}</td>
-                <td className="text-center">{s.year}</td>
-                <td className="text-center text-green-700">{s.present}</td>
-                <td className="text-center text-red-600">{s.absent}</td>
-                <td className="text-center font-semibold">{s.percentage}%</td>
-                <td className="text-center">
-                  <StatusBadge status={s.status} />
-                </td>
-              </tr>
-            ))}
-
-            {processedData.length === 0 && (
+      <div className="glass-card relative z-10">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[900px]">
+            <thead className="border-b text-slate-600">
               <tr>
-                <td colSpan="8" className="py-8 text-center text-slate-500">
-                  No attendance data available
-                </td>
+                <th className="text-left py-3">Student</th>
+                <th>Course</th>
+                <th>Batch</th>
+                <th>Year</th>
+                <th>Present</th>
+                <th>Absent</th>
+                <th>%</th>
+                <th>Status</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </GlassCard>
+            </thead>
+
+            <tbody>
+              {processedData.map((s) => (
+                <tr
+                  key={s.id}
+                  className="border-b last:border-0 hover:bg-violet-50/40 transition"
+                >
+                  <td className="py-3 font-medium">{s.name}</td>
+                  <td className="text-center">{s.course}</td>
+                  <td className="text-center">{s.batch}</td>
+                  <td className="text-center">{s.year}</td>
+                  <td className="text-center text-emerald-600">{s.present}</td>
+                  <td className="text-center text-rose-600">{s.absent}</td>
+                  <td className="text-center font-semibold">{s.percentage}%</td>
+                  <td className="text-center">
+                    <StatusBadge status={s.status} />
+                  </td>
+                </tr>
+              ))}
+
+              {processedData.length === 0 && (
+                <tr>
+                  <td colSpan="8" className="py-10 text-center text-slate-500">
+                    No attendance data available
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
@@ -279,9 +259,9 @@ function Select({ label, value, onChange, options }) {
     <div>
       <label className="text-xs font-semibold text-slate-600">{label}</label>
       <select
+        className="glass-input mt-1"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="glass-input mt-1"
       >
         {options.map((o) => (
           <option key={o}>{o}</option>
@@ -293,13 +273,13 @@ function Select({ label, value, onChange, options }) {
 
 function SummaryCard({ icon, label, value }) {
   return (
-    <GlassCard>
-      <div className="flex items-center gap-3 text-purple-600">
+    <div className="glass-kpi glass-hover">
+      <div className="flex items-center gap-3 text-violet-600">
         {icon}
         <span className="text-sm text-slate-600">{label}</span>
       </div>
       <h2 className="text-2xl font-bold mt-2">{value}</h2>
-    </GlassCard>
+    </div>
   );
 }
 
@@ -308,21 +288,13 @@ function StatusBadge({ status }) {
     <span
       className={`px-3 py-1 rounded-full text-xs font-semibold ${
         status === "Good"
-          ? "bg-green-200 text-green-800"
+          ? "bg-emerald-100 text-emerald-700"
           : status === "Average"
-          ? "bg-yellow-200 text-yellow-800"
-          : "bg-red-200 text-red-800"
+          ? "bg-amber-100 text-amber-700"
+          : "bg-rose-100 text-rose-700"
       }`}
     >
       {status}
     </span>
-  );
-}
-
-function GlassCard({ children }) {
-  return (
-    <div className="bg-white/40 backdrop-blur-xl border border-white/40 rounded-3xl p-6 shadow">
-      {children}
-    </div>
   );
 }

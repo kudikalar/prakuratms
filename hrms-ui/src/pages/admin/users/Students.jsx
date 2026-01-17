@@ -6,17 +6,32 @@ import {
   FaBookOpen,
   FaUsers,
   FaTrash,
+  FaEdit,
 } from "react-icons/fa";
 import Toast from "../../../components/Toast";
+import ConfirmModal from "../../../components/ConfirmModal";
 
 /* ================= STORAGE KEYS ================= */
 const USERS_KEY = "users";
 const COURSES_KEY = "PRAKURA_COURSES";
 const BATCHES_KEY = "batches";
 
+/* ================= HELPERS ================= */
+const normalizeId = (v) => (v == null ? "" : String(v));
+
+const normalizeBatches = (raw = []) =>
+  raw.map((b) => ({
+    ...b,
+    id: normalizeId(b.id),
+    courseId:
+      typeof b.courseId === "object"
+        ? normalizeId(b.courseId._id)
+        : normalizeId(b.courseId),
+  }));
+
 /* ================= DEFAULT ================= */
 const emptyStudent = {
-  id: null,
+  id: "",
   studentCode: "",
   name: "",
   email: "",
@@ -24,69 +39,72 @@ const emptyStudent = {
   batchId: "",
 };
 
-/* ================= STUDENT CODE GENERATOR ================= */
+/* ================= STUDENT CODE ================= */
 const generateStudentCode = (students = []) => {
   const prefix = "PKR-STU-";
-  const lastNumber =
+  const last =
     students
       .map((s) => s.studentCode)
       .filter(Boolean)
-      .map((c) => parseInt(c.replace(prefix, ""), 10))
+      .map((c) => Number(c.replace(prefix, "")))
       .sort((a, b) => b - a)[0] || 0;
 
-  return `${prefix}${String(lastNumber + 1).padStart(4, "0")}`;
+  return `${prefix}${String(last + 1).padStart(4, "0")}`;
 };
 
+/* ================= MAIN ================= */
 export default function Students() {
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [batches, setBatches] = useState([]);
+
   const [form, setForm] = useState(emptyStudent);
+  const [editingId, setEditingId] = useState(null);
+
+  const [deleteId, setDeleteId] = useState(null);
+  const [showDelete, setShowDelete] = useState(false);
+
   const [toast, setToast] = useState({ show: false, message: "" });
 
-  /* ================= LOAD DATA ================= */
+  /* ================= LOAD ================= */
   useEffect(() => {
-    const users = JSON.parse(localStorage.getItem(USERS_KEY)) || {
-      students: [],
-    };
+    const users =
+      JSON.parse(localStorage.getItem(USERS_KEY)) || { students: [] };
 
     const coursesLS =
       JSON.parse(localStorage.getItem(COURSES_KEY)) || [];
+
     const batchesLS =
       JSON.parse(localStorage.getItem(BATCHES_KEY)) || [];
 
-    // normalize old batches (safety)
-    const normalizedBatches = batchesLS.map((b) => {
-      if (b.courseId) return b;
-      const course = coursesLS.find((c) => c.title === b.course);
-      return { ...b, courseId: course?._id || "" };
-    });
+    const normalizedBatches = normalizeBatches(batchesLS);
+
+    setStudents(users.students || []);
+    setCourses(coursesLS);
+    setBatches(normalizedBatches);
 
     localStorage.setItem(
       BATCHES_KEY,
       JSON.stringify(normalizedBatches)
     );
-
-    setStudents(users.students || []);
-    setCourses(coursesLS);
-    setBatches(normalizedBatches);
   }, []);
 
-  /* ================= HELPERS ================= */
+  /* ================= LOOKUPS ================= */
   const getCourseById = (id) =>
-    courses.find((c) => String(c._id) === String(id));
+    courses.find((c) => normalizeId(c._id) === normalizeId(id));
 
   const getBatchById = (id) =>
-    batches.find((b) => String(b.id) === String(id));
+    batches.find((b) => normalizeId(b.id) === normalizeId(id));
 
+  /* ================= FILTERED BATCHES ================= */
   const availableBatches = useMemo(() => {
     if (!form.courseId) return [];
     return batches.filter(
-      (b) => String(b.courseId) === String(form.courseId)
+      (b) => normalizeId(b.courseId) === normalizeId(form.courseId)
     );
   }, [form.courseId, batches]);
 
-  /* ================= SAVE STUDENT ================= */
+  /* ================= SAVE ================= */
   const saveStudent = () => {
     if (!form.name || !form.email || !form.courseId || !form.batchId) {
       setToast({ show: true, message: "❌ All fields required" });
@@ -94,171 +112,210 @@ export default function Students() {
     }
 
     const users =
-      JSON.parse(localStorage.getItem(USERS_KEY)) || {
-        students: [],
-      };
+      JSON.parse(localStorage.getItem(USERS_KEY)) || { students: [] };
 
-    // prevent duplicate email
-    const exists = users.students.some(
-      (s) => s.email.toLowerCase() === form.email.toLowerCase()
+    const duplicate = users.students.some(
+      (s) =>
+        s.email.toLowerCase() === form.email.toLowerCase() &&
+        normalizeId(s.id) !== normalizeId(editingId)
     );
-    if (exists) {
+
+    if (duplicate) {
       setToast({ show: true, message: "⚠️ Email already exists" });
       return;
     }
 
-    const studentCode = generateStudentCode(users.students);
+    let updated;
 
-    const newStudent = {
-      ...form,
-      id: Date.now(),
-      studentCode, // ✅ PERMANENT UNIQUE CODE
-    };
+    if (editingId) {
+      updated = users.students.map((s) =>
+        normalizeId(s.id) === normalizeId(editingId)
+          ? { ...form, id: s.id }
+          : s
+      );
+      setToast({ show: true, message: "✅ Student updated" });
+    } else {
+      updated = [
+        ...users.students,
+        {
+          ...form,
+          id: Date.now().toString(),
+          studentCode: generateStudentCode(users.students),
+        },
+      ];
+      setToast({ show: true, message: "✅ Student added" });
+    }
 
-    const updated = [...users.students, newStudent];
     users.students = updated;
-
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
+
     setStudents(updated);
     setForm(emptyStudent);
-
-    setToast({ show: true, message: "✅ Student added successfully" });
+    setEditingId(null);
   };
 
-  /* ================= DELETE STUDENT ================= */
-  const deleteStudent = (id) => {
+  /* ================= EDIT ================= */
+  const startEdit = (s) => {
+    setForm({
+      ...s,
+      id: normalizeId(s.id),
+      courseId: normalizeId(s.courseId),
+      batchId: normalizeId(s.batchId),
+    });
+    setEditingId(normalizeId(s.id));
+  };
+
+  /* ================= DELETE ================= */
+  const requestDelete = (id) => {
+    setDeleteId(normalizeId(id));
+    setShowDelete(true);
+  };
+
+  const confirmDelete = () => {
     const users =
-      JSON.parse(localStorage.getItem(USERS_KEY)) || {
-        students: [],
-      };
+      JSON.parse(localStorage.getItem(USERS_KEY)) || { students: [] };
 
-    const updated = users.students.filter((s) => s.id !== id);
+    const updated = users.students.filter(
+      (s) => normalizeId(s.id) !== normalizeId(deleteId)
+    );
+
     users.students = updated;
-
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    setStudents(updated);
 
-    setToast({ show: true, message: "🗑️ Student removed" });
+    setStudents(updated);
+    setShowDelete(false);
+    setDeleteId(null);
+
+    setToast({ show: true, message: "🗑️ Student deleted" });
   };
 
   /* ================= UI ================= */
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-10 p-4 sm:p-6 md:p-8 animate-fadeIn
+      bg-gradient-to-br from-indigo-50 via-orange-50 to-pink-50
+      rounded-[36px] shadow-[0_40px_120px_rgba(79,70,229,0.2)]">
 
       {/* HEADER */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-800">Students</h2>
-        <p className="text-sm text-slate-600">
-          Create and view student records
+        <h2 className="text-2xl sm:text-3xl font-bold
+          bg-gradient-to-r from-indigo-600 to-orange-500
+          bg-clip-text text-transparent">
+          Students
+        </h2>
+        <p className="text-sm text-slate-500">
+          Create, update and manage student records
         </p>
       </div>
 
       {/* FORM */}
-      <div className="bg-white/50 backdrop-blur-2xl border border-white/40 rounded-3xl p-6 shadow-xl">
-        <div className="grid md:grid-cols-5 gap-4 items-end">
-
-          <Field
-            icon={<FaUser />}
-            placeholder="Student Name"
+      <GlassCard>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+          <Field icon={<FaUser />} placeholder="Student Name"
             value={form.name}
-            onChange={(v) => setForm({ ...form, name: v })}
-          />
+            onChange={(v) => setForm({ ...form, name: v })} />
 
-          <Field
-            icon={<FaEnvelope />}
-            placeholder="Email"
+          <Field icon={<FaEnvelope />} placeholder="Email"
             value={form.email}
-            onChange={(v) => setForm({ ...form, email: v })}
-          />
+            onChange={(v) => setForm({ ...form, email: v })} />
 
-          <Select
-            icon={<FaBookOpen />}
-            value={form.courseId}
-            onChange={(v) =>
-              setForm({ ...form, courseId: v, batchId: "" })
-            }
+          <Select icon={<FaBookOpen />} value={form.courseId}
+            onChange={(v) => setForm({ ...form, courseId: v, batchId: "" })}
             placeholder="Select Course"
             options={courses.map((c) => ({
-              value: c._id,
+              value: normalizeId(c._id),
               label: c.title,
-            }))}
-          />
+            }))} />
 
-          <Select
-            icon={<FaUsers />}
-            value={form.batchId}
+          <Select icon={<FaUsers />} value={form.batchId}
             disabled={!form.courseId}
             onChange={(v) => setForm({ ...form, batchId: v })}
-            placeholder={
-              form.courseId ? "Select Batch" : "Select Course First"
-            }
+            placeholder={form.courseId ? "Select Batch" : "Select course first"}
             options={availableBatches.map((b) => ({
-              value: b.id,
+              value: normalizeId(b.id),
               label: b.name,
-            }))}
-          />
+            }))} />
 
           <button
             onClick={saveStudent}
-            className="h-[46px] flex items-center justify-center gap-2 rounded-full font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-lg transition"
-          >
-            <FaPlus /> Add
+            className="h-[46px] w-full rounded-full px-6 font-semibold text-white
+              bg-gradient-to-r from-indigo-600 via-violet-600 to-orange-500
+              hover:scale-[1.02] active:scale-[0.98]
+              shadow-[0_15px_40px_rgba(79,70,229,0.45)]
+              transition">
+            <FaPlus className="inline mr-1" />
+            {editingId ? "Update" : "Add"}
           </button>
         </div>
-      </div>
+      </GlassCard>
 
-      {/* STUDENT LIST */}
-      <div className="bg-white/50 backdrop-blur-2xl border border-white/40 rounded-3xl p-6 shadow-xl">
-        <h3 className="font-semibold text-slate-800 mb-4">
-          Saved Students
-        </h3>
-
-        {students.length === 0 ? (
-          <p className="text-sm text-slate-500 italic">
-            No students added yet
-          </p>
-        ) : (
+      {/* DESKTOP TABLE */}
+      <div className="hidden md:block">
+        <GlassCard>
           <table className="w-full text-sm">
-            <thead className="bg-white/60">
+            <thead className="bg-white/60 text-slate-700">
               <tr>
-                <th className="px-3 py-2 text-left">Student Code</th>
-                <th className="px-3 py-2 text-left">Name</th>
-                <th className="px-3 py-2 text-left">Email</th>
-                <th className="px-3 py-2 text-left">Course</th>
-                <th className="px-3 py-2 text-left">Batch</th>
-                <th className="px-3 py-2 text-right">Action</th>
+                <th className="p-3 text-left">Code</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Course</th>
+                <th>Batch</th>
+                <th className="text-right">Action</th>
               </tr>
             </thead>
             <tbody>
               {students.map((s) => (
-                <tr key={s.id} className="border-b hover:bg-white/40">
-                  <td className="px-3 py-2 font-semibold text-indigo-600">
-                    {s.studentCode}
-                  </td>
-                  <td className="px-3 py-2 font-medium text-purple-700">
-                    {s.name}
-                  </td>
-                  <td className="px-3 py-2">{s.email}</td>
-                  <td className="px-3 py-2">
-                    {getCourseById(s.courseId)?.title || "—"}
-                  </td>
-                  <td className="px-3 py-2">
-                    {getBatchById(s.batchId)?.name || "—"}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <button
-                      onClick={() => deleteStudent(s.id)}
-                      className="p-2 rounded-full bg-rose-100 text-rose-600 hover:bg-rose-200"
-                    >
+                <tr key={s.id} className="border-b hover:bg-indigo-50/40">
+                  <td className="p-3 font-semibold text-indigo-600">{s.studentCode}</td>
+                  <td>{s.name}</td>
+                  <td>{s.email}</td>
+                  <td>{getCourseById(s.courseId)?.title || "—"}</td>
+                  <td>{getBatchById(s.batchId)?.name || "—"}</td>
+                  <td className="text-right space-x-2">
+                    <IconBtn onClick={() => startEdit(s)} color="indigo">
+                      <FaEdit />
+                    </IconBtn>
+                    <IconBtn onClick={() => requestDelete(s.id)} color="rose">
                       <FaTrash />
-                    </button>
+                    </IconBtn>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
+        </GlassCard>
       </div>
+
+      {/* MOBILE CARDS */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {students.map((s) => (
+          <GlassCard key={s.id}>
+            <div className="space-y-2">
+              <div className="font-semibold text-indigo-600">{s.studentCode}</div>
+              <div className="font-medium">{s.name}</div>
+              <div className="text-sm text-slate-500">{s.email}</div>
+              <div className="text-sm">
+                {getCourseById(s.courseId)?.title} · {getBatchById(s.batchId)?.name}
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <IconBtn onClick={() => startEdit(s)} color="indigo">
+                  <FaEdit />
+                </IconBtn>
+                <IconBtn onClick={() => requestDelete(s.id)} color="rose">
+                  <FaTrash />
+                </IconBtn>
+              </div>
+            </div>
+          </GlassCard>
+        ))}
+      </div>
+
+      <ConfirmModal
+        open={showDelete}
+        title="Delete Student"
+        message="This action cannot be undone. Continue?"
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDelete(false)}
+      />
 
       <Toast
         show={toast.show}
@@ -271,6 +328,13 @@ export default function Students() {
 
 /* ================= UI HELPERS ================= */
 
+const GlassCard = ({ children }) => (
+  <div className="bg-white/70 backdrop-blur-2xl border border-white/50
+    rounded-3xl p-5 shadow-[0_25px_80px_rgba(0,0,0,0.15)]">
+    {children}
+  </div>
+);
+
 const Field = ({ icon, value, placeholder, onChange }) => (
   <div className="relative">
     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -280,7 +344,7 @@ const Field = ({ icon, value, placeholder, onChange }) => (
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="glass-input pl-11 h-[46px]"
+      className="glass-input pl-11 h-[46px] w-full"
     />
   </div>
 );
@@ -301,7 +365,7 @@ const Select = ({
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
-      className="glass-input pl-11 h-[46px]"
+      className="glass-input pl-11 h-[46px] w-full"
     >
       <option value="">{placeholder}</option>
       {options.map((o) => (
@@ -311,4 +375,14 @@ const Select = ({
       ))}
     </select>
   </div>
+);
+
+const IconBtn = ({ children, onClick, color }) => (
+  <button
+    onClick={onClick}
+    className={`p-2 rounded-full bg-${color}-100 text-${color}-700
+      hover:bg-${color}-200 transition`}
+  >
+    {children}
+  </button>
 );

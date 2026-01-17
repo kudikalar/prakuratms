@@ -10,6 +10,18 @@ const COURSES_KEY = "PRAKURA_COURSES";
 
 /* ================= HELPERS ================= */
 
+const normalizeId = (v) => (v == null ? "" : String(v));
+
+const normalizeBatches = (raw = []) =>
+  raw.map((b) => ({
+    ...b,
+    id: normalizeId(b.id),
+    courseId:
+      typeof b.courseId === "object"
+        ? normalizeId(b.courseId._id)
+        : normalizeId(b.courseId),
+  }));
+
 const getBatchStatus = (startDate, endDate) => {
   if (!startDate || !endDate) return "Upcoming";
   const today = new Date().setHours(0, 0, 0, 0);
@@ -25,6 +37,61 @@ const statusColor = {
   Upcoming: "bg-yellow-100 text-yellow-700",
   Ongoing: "bg-blue-100 text-blue-700",
   Completed: "bg-green-100 text-green-700",
+};
+
+/* ================= AUTOMATION VIEW (UNCHANGED) ================= */
+
+const buildAutomationIframeHTML = (batches, courses) => {
+  const getCourseTitle = (id) =>
+    courses.find((c) => normalizeId(c._id) === normalizeId(id))?.title || "—";
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<style>
+  body {
+    margin: 0;
+    padding: 16px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    background: #f8fafc;
+  }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  }
+  .badge {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    background: #e5e7eb;
+  }
+</style>
+</head>
+<body>
+  <h3>Batches – Automation View</h3>
+
+  ${batches
+    .map((b) => {
+      const status = getBatchStatus(b.startDate, b.endDate);
+      return `
+        <div class="card">
+          <strong>${b.name}</strong><br/>
+          <small>${getCourseTitle(b.courseId)}</small><br/>
+          <span class="badge">${status}</span>
+        </div>
+      `;
+    })
+    .join("")}
+</body>
+</html>
+`;
 };
 
 /* ================= MAIN ================= */
@@ -43,31 +110,47 @@ export default function Batches() {
   const [courseFilter, setCourseFilter] = useState("All");
   const [sort, setSort] = useState("new");
 
-  /* ================= LOAD ================= */
+  /* ================= LOAD + NORMALIZE ================= */
   useEffect(() => {
-    setBatches(JSON.parse(localStorage.getItem(BATCHES_KEY)) || []);
-    setCourses(JSON.parse(localStorage.getItem(COURSES_KEY)) || []);
+    const rawBatches = JSON.parse(localStorage.getItem(BATCHES_KEY)) || [];
+    const rawCourses = JSON.parse(localStorage.getItem(COURSES_KEY)) || [];
+
+    const normalized = normalizeBatches(rawBatches);
+
+    setBatches(normalized);
+    setCourses(rawCourses);
+
+    // 🔐 Persist normalized data once (safe)
+    localStorage.setItem(BATCHES_KEY, JSON.stringify(normalized));
   }, []);
 
   const getCourseTitle = (courseId) =>
-    courses.find((c) => String(c._id) === String(courseId))?.title || "—";
+    courses.find(
+      (c) => normalizeId(c._id) === normalizeId(courseId)
+    )?.title || "—";
 
   /* ================= DELETE ================= */
+
   const confirmDelete = (id) => {
-    setSelectedId(id);
+    setSelectedId(normalizeId(id));
     setShowModal(true);
   };
 
   const deleteBatch = () => {
-    const updated = batches.filter((b) => b.id !== selectedId);
+    const updated = batches.filter(
+      (b) => normalizeId(b.id) !== normalizeId(selectedId)
+    );
+
     setBatches(updated);
     localStorage.setItem(BATCHES_KEY, JSON.stringify(updated));
+
     setShowModal(false);
     setToast("🗑️ Batch deleted successfully");
     setTimeout(() => setToast(""), 2000);
   };
 
   /* ================= FILTER + SORT ================= */
+
   const filteredBatches = useMemo(() => {
     return batches
       .filter((b) => {
@@ -77,7 +160,7 @@ export default function Batches() {
 
         const matchCourse =
           courseFilter === "All" ||
-          String(b.courseId) === String(courseFilter);
+          normalizeId(b.courseId) === normalizeId(courseFilter);
 
         return matchName && matchCourse;
       })
@@ -89,6 +172,7 @@ export default function Batches() {
   }, [batches, search, courseFilter, sort]);
 
   /* ================= GROUP ================= */
+
   const grouped = {
     Upcoming: filteredBatches.filter(
       (b) => getBatchStatus(b.startDate, b.endDate) === "Upcoming"
@@ -103,24 +187,25 @@ export default function Batches() {
 
   const uniqueCourses = [
     { id: "All", title: "All Courses" },
-    ...courses.map((c) => ({ id: c._id, title: c.title })),
+    ...courses.map((c) => ({
+      id: normalizeId(c._id),
+      title: c.title,
+    })),
   ];
 
+  /* ================= UI ================= */
+
   return (
-    <div
-      className="
-        max-w-6xl mx-auto space-y-10 animate-fadeIn
-        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
-        rounded-[32px] p-6 md:p-8
-        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
-      "
-    >
-      {/* ================= HEADER ================= */}
+    <div className="
+      max-w-6xl mx-auto space-y-10 animate-fadeIn
+      bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
+      rounded-[32px] p-6 md:p-8
+      shadow-[0_40px_120px_rgba(80,70,200,0.25)]
+    ">
+      {/* HEADER */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">
-            Batches
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-800">Batches</h2>
           <p className="text-sm text-slate-600">
             Manage & track training batches
           </p>
@@ -140,7 +225,7 @@ export default function Batches() {
         </NavLink>
       </div>
 
-      {/* ================= FILTER BAR ================= */}
+      {/* FILTER BAR */}
       <GlassCard>
         <div className="grid md:grid-cols-4 gap-4">
           <input
@@ -177,7 +262,7 @@ export default function Batches() {
         </div>
       </GlassCard>
 
-      {/* ================= COLUMNS ================= */}
+      {/* COLUMNS */}
       <div className="grid md:grid-cols-3 gap-8">
         {Object.entries(grouped).map(([status, list]) => (
           <BatchColumn
@@ -185,7 +270,9 @@ export default function Batches() {
             title={status}
             batches={list}
             getCourseTitle={getCourseTitle}
-            onEdit={(id) => navigate(`/admin/batches/create?id=${id}`)}
+            onEdit={(id) =>
+              navigate(`/admin/batches/create?id=${id}`)
+            }
             onDelete={confirmDelete}
           />
         ))}
@@ -271,7 +358,12 @@ const BatchColumn = ({ title, batches, getCourseTitle, onEdit, onDelete }) => (
 /* ================= SHARED UI ================= */
 
 const GlassCard = ({ children }) => (
-  <div className="bg-white/40 backdrop-blur-[24px] border border-white/40 rounded-3xl p-6 shadow-[0_30px_90px_rgba(0,0,0,0.2)]">
+  <div className="
+    bg-white/40 backdrop-blur-[24px]
+    border border-white/40
+    rounded-3xl p-6
+    shadow-[0_30px_90px_rgba(0,0,0,0.2)]
+  ">
     {children}
   </div>
 );

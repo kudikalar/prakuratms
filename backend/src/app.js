@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes.js";
 import courseRoutes from "./routes/course.routes.js";
 import studentRoutes from "./routes/student.routes.js";
-
+import paymentsRoutes from "./routes/payments.routes.js";
 
 /* ================= LOAD ENV ================= */
 dotenv.config();
@@ -14,35 +14,50 @@ dotenv.config();
 /* ================= APP INIT ================= */
 const app = express();
 
-/* ================= MIDDLEWARE ================= */
+/* ================= CORS (CRITICAL FIX) ================= */
 app.use(
   cors({
-    origin: "*", // 🔐 restrict in production
+    origin: [
+      "http://localhost:5173", // dev
+      "http://localhost:3000", // alt dev
+      // "https://yourdomain.com" // prod
+    ],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-/* ✅ BODY PARSERS */
+/* ✅ REQUIRED FOR DELETE / PUT */
+app.options("*", cors());
+
+/* ================= BODY PARSERS ================= */
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 /* ================= HEALTH CHECK ================= */
 app.get("/health", (req, res) => {
-  res.json({
+  res.status(200).json({
     status: "OK",
     jwtLoaded: Boolean(process.env.JWT_SECRET),
     env: process.env.NODE_ENV || "development",
+    timestamp: new Date().toISOString(),
   });
 });
-app.use("/api/student", studentRoutes);
 
-/* ================= ROUTE MOUNTING ================= */
+/* ================= ROUTES ================= */
 
 /* 🔐 AUTH */
 app.use("/api/auth", authRoutes);
 
-/* 📚 COURSES (ADMIN / STUDENT) */
+/* 👨‍🎓 STUDENTS */
+app.use("/api/student", studentRoutes);
+
+/* 📚 COURSES */
 app.use("/api/courses", courseRoutes);
+
+/* 💰 PAYMENTS */
+app.use("/api/payments", paymentsRoutes);
 
 /* ================= 404 HANDLER ================= */
 app.use((req, res) => {
@@ -56,6 +71,7 @@ app.use((req, res) => {
 /* ================= GLOBAL ERROR HANDLER ================= */
 app.use((err, req, res, next) => {
   console.error("🔥 UNHANDLED ERROR:", err);
+
   res.status(err.status || 500).json({
     success: false,
     message: err.message || "Internal server error",

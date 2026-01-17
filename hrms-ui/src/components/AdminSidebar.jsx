@@ -384,16 +384,17 @@ export default function AdminSidebar() {
       <aside
         className={`
           fixed md:static z-50
-          h-full md:h-screen w-72
-          bg-gradient-to-br from-blue-800 via-blue-900 to-indigo-900
-          border-r border-white/20
+          h-full md:h-screen w-80
+bg-gradient-to-b from-orange-600 via-orange-500 to-amber-600
+
+border-r border-white/30 shadow-[10px_0_40px_rgba(0,0,0,0.35)]
           transform transition-transform duration-300
           ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
-        <div className="px-4 py-4 flex items-center justify-between border-b border-white/20">
+<div className="px-5 py-4 flex items-center justify-between border-b border-white/30">
           <div className="flex items-center gap-3">
-            <img src={PrakuraLogo} className="w-8 h-8" />
+<img src={PrakuraLogo} className="w-9 h-9 rounded-md bg-white p-1" />
             <span className="text-white font-semibold">PRAKURA TMS</span>
           </div>
           <button
@@ -410,12 +411,16 @@ export default function AdminSidebar() {
           ).map((menu) => (
             <div key={menu.title}>
               <button
-                className="w-full flex justify-between items-center px-3 py-2 rounded-lg hover:bg-white/10"
+className="
+  w-full flex justify-between items-center
+  px-4 py-2.5 rounded-xl
+  hover:bg-white/20 transition
+"
                 onClick={() =>
                   setOpenMenu((p) => (p === menu.title ? null : menu.title))
                 }
               >
-                <div className="flex items-center gap-3">
+<div className="flex items-center gap-4 font-medium">
                   {menu.icon}
                   {menu.title}
                 </div>
@@ -427,15 +432,15 @@ export default function AdminSidebar() {
               </button>
 
               {openMenu === menu.title && (
-                <div className="ml-8 space-y-1">
+<div className="ml-10 space-y-1.5">
                   {menu.items.map((item) => (
                     <NavLink
                       key={item.path}
                       to={item.path}
                       className={({ isActive }) =>
-                        `block px-3 py-1.5 rounded-md ${
+                        `block px-4 py-2 rounded-lg transition ${
                           isActive
-                            ? "bg-white/20 font-medium"
+                            ? "bg-white/30 font-semibold"
                             : "hover:bg-white/10"
                         }`
                       }

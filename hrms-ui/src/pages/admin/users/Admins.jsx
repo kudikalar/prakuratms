@@ -4,6 +4,8 @@ import Toast from "../../../components/Toast";
 
 /* ================= HELPERS ================= */
 
+const STORAGE_KEY = "users";
+
 const emptyAdmin = {
   id: null,
   name: "",
@@ -12,6 +14,23 @@ const emptyAdmin = {
 
 const isValidEmail = (email) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const loadUsers = () => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return {
+      admins: Array.isArray(raw?.admins) ? raw.admins : [],
+      educators: Array.isArray(raw?.educators) ? raw.educators : [],
+      students: Array.isArray(raw?.students) ? raw.students : [],
+    };
+  } catch {
+    return { admins: [], educators: [], students: [] };
+  }
+};
+
+const saveUsers = (users) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+};
 
 /* ================= COMPONENT ================= */
 
@@ -31,12 +50,8 @@ export default function Admins() {
 
   /* ================= LOAD ================= */
   useEffect(() => {
-    const users = JSON.parse(localStorage.getItem("users")) || {
-      admins: [],
-      educators: [],
-      students: [],
-    };
-    setAdmins(users.admins || []);
+    const users = loadUsers();
+    setAdmins(users.admins);
   }, []);
 
   /* ================= VALIDATION ================= */
@@ -45,7 +60,7 @@ export default function Admins() {
 
     if (!data.name.trim()) {
       e.name = "Admin name is required";
-    } else if (data.name.length < 3) {
+    } else if (data.name.trim().length < 3) {
       e.name = "Name must be at least 3 characters";
     }
 
@@ -77,28 +92,37 @@ export default function Admins() {
 
     if (Object.keys(validationErrors).length > 0) return;
 
-    const users = JSON.parse(localStorage.getItem("users")) || {
-      admins: [],
-      educators: [],
-      students: [],
-    };
-
-    let updated;
+    const users = loadUsers();
+    let updatedAdmins;
 
     if (editing) {
-      updated = users.admins.map((a) =>
-        a.id === form.id ? form : a
+      updatedAdmins = users.admins.map((a) =>
+        a.id === form.id
+          ? {
+              ...a,
+              name: form.name.trim(),
+              email: form.email.trim().toLowerCase(),
+            }
+          : a
       );
       setToast({ show: true, message: "✅ Admin updated successfully" });
     } else {
-      updated = [...users.admins, { ...form, id: Date.now() }];
+      updatedAdmins = [
+        ...users.admins,
+        {
+          id: Date.now(),
+          name: form.name.trim(),
+          email: form.email.trim().toLowerCase(),
+          role: "Admin",
+          createdAt: new Date().toISOString(),
+        },
+      ];
       setToast({ show: true, message: "✅ Admin added successfully" });
     }
 
-    users.admins = updated;
-    localStorage.setItem("users", JSON.stringify(users));
-
-    setAdmins(updated);
+    const updatedUsers = { ...users, admins: updatedAdmins };
+    saveUsers(updatedUsers);
+    setAdmins(updatedAdmins);
     resetForm();
 
     setTimeout(() => {
@@ -108,16 +132,10 @@ export default function Admins() {
 
   /* ================= DELETE ================= */
   const deleteAdmin = () => {
-    const users = JSON.parse(localStorage.getItem("users")) || {
-      admins: [],
-      educators: [],
-      students: [],
-    };
-
+    const users = loadUsers();
     const updated = users.admins.filter((a) => a.id !== confirmId);
-    users.admins = updated;
 
-    localStorage.setItem("users", JSON.stringify(users));
+    saveUsers({ ...users, admins: updated });
     setAdmins(updated);
     setConfirmId(null);
 
@@ -129,7 +147,11 @@ export default function Admins() {
 
   /* ================= EDIT ================= */
   const startEdit = (admin) => {
-    setForm(admin);
+    setForm({
+      id: admin.id,
+      name: admin.name,
+      email: admin.email,
+    });
     setEditing(true);
     setErrors({});
     setTouched({});
@@ -146,16 +168,25 @@ export default function Admins() {
   return (
     <div
       className="
-        max-w-5xl space-y-8 animate-fadeIn
-        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
-        rounded-[32px] p-6 md:p-8
-        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
+        max-w-5xl mx-auto space-y-10 animate-fadeIn
+        bg-gradient-to-br from-slate-100 via-indigo-100 to-violet-100
+        rounded-[36px] p-5 sm:p-6 md:p-8
+        shadow-[0_45px_150px_rgba(79,70,229,0.35)]
+        border border-white/50
       "
     >
       {/* HEADER */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-800">Admins</h2>
-        <p className="text-sm text-slate-600">
+        <h2
+          className="
+            text-2xl md:text-3xl font-bold
+            bg-gradient-to-r from-indigo-700 to-violet-700
+            bg-clip-text text-transparent
+          "
+        >
+          Admins
+        </h2>
+        <p className="text-sm text-slate-600 mt-1">
           Manage system administrators
         </p>
       </div>
@@ -163,7 +194,6 @@ export default function Admins() {
       {/* FORM */}
       <GlassCard>
         <div className="grid md:grid-cols-2 gap-4">
-          {/* NAME */}
           <div>
             <input
               placeholder="Admin Name"
@@ -175,16 +205,17 @@ export default function Admins() {
               onBlur={() =>
                 setTouched((t) => ({ ...t, name: true }))
               }
-              className="glass-input"
+              className="
+                glass-input
+                focus:ring-2 focus:ring-indigo-500/60
+                transition
+              "
             />
             {errors.name && touched.name && (
-              <p className="mt-1 text-xs text-red-600">
-                {errors.name}
-              </p>
+              <p className="mt-1 text-xs text-rose-600">{errors.name}</p>
             )}
           </div>
 
-          {/* EMAIL */}
           <div>
             <input
               placeholder="Email Address"
@@ -196,12 +227,14 @@ export default function Admins() {
               onBlur={() =>
                 setTouched((t) => ({ ...t, email: true }))
               }
-              className="glass-input"
+              className="
+                glass-input
+                focus:ring-2 focus:ring-indigo-500/60
+                transition
+              "
             />
             {errors.email && touched.email && (
-              <p className="mt-1 text-xs text-red-600">
-                {errors.email}
-              </p>
+              <p className="mt-1 text-xs text-rose-600">{errors.email}</p>
             )}
           </div>
         </div>
@@ -212,9 +245,11 @@ export default function Admins() {
             className="
               flex items-center gap-2 px-7 py-3 rounded-full
               font-semibold text-white
-              bg-gradient-to-r from-purple-600 to-indigo-600
-              hover:from-purple-700 hover:to-indigo-700
-              shadow-lg transition
+              bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600
+              hover:from-indigo-700 hover:via-violet-700 hover:to-purple-700
+              shadow-[0_18px_50px_rgba(79,70,229,0.5)]
+              hover:scale-[1.03]
+              transition
             "
           >
             <FaPlus />
@@ -226,8 +261,9 @@ export default function Admins() {
               onClick={resetForm}
               className="
                 px-6 py-3 rounded-full
-                bg-white/70 border border-white/50
+                bg-white/80 border border-white/60
                 text-slate-700 flex items-center gap-2
+                hover:bg-white transition
               "
             >
               <FaTimes />
@@ -240,15 +276,18 @@ export default function Admins() {
       {/* LIST */}
       <div className="grid gap-4">
         {admins.map((a) => (
-          <GlassCard key={a.id} className="glass-hover">
+          <GlassCard
+            key={a.id}
+            className="
+              hover:-translate-y-[1px]
+              hover:shadow-[0_35px_110px_rgba(79,70,229,0.35)]
+              transition
+            "
+          >
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-semibold text-slate-800">
-                  {a.name}
-                </h3>
-                <p className="text-sm text-slate-600">
-                  {a.email}
-                </p>
+                <h3 className="font-semibold text-slate-800">{a.name}</h3>
+                <p className="text-sm text-slate-600">{a.email}</p>
               </div>
 
               <div className="flex gap-3">
@@ -256,8 +295,9 @@ export default function Admins() {
                   onClick={() => startEdit(a)}
                   className="
                     p-2.5 rounded-full
-                    bg-indigo-100 text-indigo-600
-                    hover:bg-indigo-200 transition
+                    bg-indigo-100/80 text-indigo-700
+                    hover:bg-indigo-200 hover:scale-110
+                    transition
                   "
                 >
                   <FaEdit />
@@ -267,8 +307,9 @@ export default function Admins() {
                   onClick={() => setConfirmId(a.id)}
                   className="
                     p-2.5 rounded-full
-                    bg-rose-100 text-rose-600
-                    hover:bg-rose-200 transition
+                    bg-rose-100/80 text-rose-700
+                    hover:bg-rose-200 hover:scale-110
+                    transition
                   "
                 >
                   <FaTrash />
@@ -279,7 +320,6 @@ export default function Admins() {
         ))}
       </div>
 
-      {/* DELETE CONFIRM */}
       {confirmId && (
         <ConfirmModal
           onCancel={() => setConfirmId(null)}
@@ -291,18 +331,20 @@ export default function Admins() {
         show={toast.show}
         message={toast.message}
         onClose={() => setToast({ show: false, message: "" })}
+        className="z-[60]"
       />
     </div>
   );
 }
 
-/* ================= MODALS & UI ================= */
+/* ================= UI HELPERS ================= */
 
 const GlassCard = ({ children, className = "" }) => (
   <div
-    className={`bg-white/40 backdrop-blur-[24px]
-      border border-white/40 rounded-3xl p-6
-      shadow-[0_30px_90px_rgba(0,0,0,0.2)]
+    className={`bg-white/65 backdrop-blur-2xl
+      border border-white/60 rounded-3xl p-6
+      shadow-[0_30px_90px_rgba(79,70,229,0.25)]
+      transition
       ${className}`}
   >
     {children}
@@ -315,7 +357,14 @@ const ConfirmModal = ({ onCancel, onConfirm }) => (
       className="absolute inset-0 bg-black/40 backdrop-blur-sm"
       onClick={onCancel}
     />
-    <div className="relative glass-card w-80 animate-scaleIn">
+    <div className="
+      relative glass-card w-80
+      bg-white/90 backdrop-blur-2xl
+      rounded-3xl p-6
+      border border-white/60
+      shadow-[0_35px_120px_rgba(0,0,0,0.35)]
+      animate-scaleIn
+    ">
       <h3 className="font-semibold text-lg text-slate-800">
         Delete Admin?
       </h3>
@@ -326,16 +375,13 @@ const ConfirmModal = ({ onCancel, onConfirm }) => (
       <div className="flex justify-end gap-3 mt-5">
         <button
           onClick={onCancel}
-          className="px-4 py-2 rounded-lg
-          bg-white/60 border border-white/50"
+          className="px-4 py-2 rounded-lg bg-white/70 border border-white/60"
         >
           Cancel
         </button>
         <button
           onClick={onConfirm}
-          className="px-4 py-2 rounded-lg
-          bg-red-600 hover:bg-red-700
-          text-white font-semibold"
+          className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold"
         >
           Delete
         </button>

@@ -1,22 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrash, FaSearch, FaLock } from "react-icons/fa";
 import { NavLink, useNavigate } from "react-router-dom";
 import ConfirmModal from "../../../components/ConfirmModal";
 import Toast from "../../../components/Toast";
 
 const COURSES_KEY = "PRAKURA_COURSES";
+const BATCHES_KEY = "batches";
+const API_BASE =
+  import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
-/* =====================================================
-   ALL COURSES – STATUS BASED (UPCOMING / ONGOING / COMPLETED)
-   (PRODUCTION READY – DATE FREE)
-===================================================== */
-
-/* ===== STATUS HELPER ===== */
+/* ================= STATUS HELPER ================= */
 const getCourseStatus = (course) => {
-  return course?.status || "ONGOING";
+  const s = String(course?.status || "ONGOING").toUpperCase();
+  return ["UPCOMING", "ONGOING", "COMPLETED"].includes(s)
+    ? s
+    : "ONGOING";
 };
 
-/* ===== NORMALIZERS ===== */
+/* ================= NORMALIZERS ================= */
 const safeText = (val) => (val && String(val).trim() ? val : "—");
 const safePrice = (val) =>
   typeof val === "number" && val >= 0 ? `₹${val}` : "—";
@@ -28,22 +29,30 @@ export default function AllCourses() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("ONGOING");
 
+  /* 🔎 SEARCH + FILTER */
+  const [search, setSearch] = useState("");
+  const [levelFilter, setLevelFilter] = useState("ALL");
+  const [modeFilter, setModeFilter] = useState("ALL");
+
   const navigate = useNavigate();
 
   /* ================= LOAD COURSES ================= */
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchCourses = async () => {
       try {
         const token = localStorage.getItem("token");
 
         const res = await fetch(
-          "http://localhost:5000/api/auth/admin/courses",
+          `${API_BASE}/api/auth/admin/courses`,
           {
             headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal,
           }
         );
 
-        if (!res.ok) throw new Error("Failed to fetch");
+        if (!res.ok) throw new Error();
 
         const data = await res.json();
         const fetchedCourses = Array.isArray(data.courses)
@@ -51,32 +60,65 @@ export default function AllCourses() {
           : [];
 
         setCourses(fetchedCourses);
-
-        /* 🔥 SYNC TO SHARED STORAGE */
-        localStorage.setItem(
-          COURSES_KEY,
-          JSON.stringify(fetchedCourses)
-        );
-      } catch {
-        setToast({ show: true, message: "❌ Failed to load courses" });
-        setCourses([]);
+        localStorage.setItem(COURSES_KEY, JSON.stringify(fetchedCourses));
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          setToast({ show: true, message: "❌ Failed to load courses" });
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchCourses();
+    return () => controller.abort();
   }, []);
 
   /* ================= GROUP BY STATUS ================= */
   const coursesByStatus = useMemo(
     () => ({
-      UPCOMING: courses.filter((c) => getCourseStatus(c) === "UPCOMING"),
-      ONGOING: courses.filter((c) => getCourseStatus(c) === "ONGOING"),
-      COMPLETED: courses.filter((c) => getCourseStatus(c) === "COMPLETED"),
+      UPCOMING: courses.filter(
+        (c) => getCourseStatus(c) === "UPCOMING"
+      ),
+      ONGOING: courses.filter(
+        (c) => getCourseStatus(c) === "ONGOING"
+      ),
+      COMPLETED: courses.filter(
+        (c) => getCourseStatus(c) === "COMPLETED"
+      ),
     }),
     [courses]
   );
+
+  /* ================= FILTERED COURSES ================= */
+  const filteredCourses = useMemo(() => {
+    return coursesByStatus[activeTab].filter((c) => {
+      const matchSearch =
+        c.title?.toLowerCase().includes(search.toLowerCase()) ||
+        c.category?.toLowerCase().includes(search.toLowerCase());
+
+      const matchLevel =
+        levelFilter === "ALL" || c.level === levelFilter;
+
+      const matchMode =
+        modeFilter === "ALL" || c.mode === modeFilter;
+
+      return matchSearch && matchLevel && matchMode;
+    });
+  }, [coursesByStatus, activeTab, search, levelFilter, modeFilter]);
+
+  /* ================= ANALYTICS ================= */
+  const analytics = useMemo(() => {
+    const paid = courses.filter((c) => c.price > 0).length;
+    const free = courses.length - paid;
+    return { total: courses.length, paid, free };
+  }, [courses]);
+
+  /* ================= DELETE LOCK (BATCH EXISTS) ================= */
+  const hasBatch = (courseId) => {
+    const batches = JSON.parse(localStorage.getItem(BATCHES_KEY)) || [];
+    return batches.some((b) => String(b.courseId) === String(courseId));
+  };
 
   /* ================= DELETE COURSE ================= */
   const deleteCourse = async () => {
@@ -84,7 +126,7 @@ export default function AllCourses() {
       const token = localStorage.getItem("token");
 
       const res = await fetch(
-        `http://localhost:5000/api/auth/admin/courses/${confirmId}`,
+        `${API_BASE}/api/auth/admin/courses/${confirmId}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -95,13 +137,7 @@ export default function AllCourses() {
 
       setCourses((prev) => {
         const updated = prev.filter((c) => c._id !== confirmId);
-
-        /* 🔥 SYNC TO SHARED STORAGE */
-        localStorage.setItem(
-          COURSES_KEY,
-          JSON.stringify(updated)
-        );
-
+        localStorage.setItem(COURSES_KEY, JSON.stringify(updated));
         return updated;
       });
 
@@ -116,147 +152,103 @@ export default function AllCourses() {
 
   /* ================= UI ================= */
   return (
-    <div
-      className="
-        max-w-7xl mx-auto space-y-8 animate-fadeIn
-        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
-        rounded-[32px] p-6 md:p-8
-        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
-      "
-    >
+    <div className="max-w-7xl mx-auto space-y-10 animate-fadeIn bg-gradient-to-br from-slate-100 via-indigo-100 to-violet-100 rounded-[36px] p-6 shadow-[0_45px_150px_rgba(79,70,229,0.35)]">
+
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Courses</h2>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-700 to-violet-700 bg-clip-text text-transparent">
+            Courses
+          </h2>
           <p className="text-sm text-slate-600">
-            Manage courses by lifecycle status
+            Lifecycle, pricing & delivery overview
           </p>
         </div>
 
         <NavLink
           to="/admin/courses/add"
-          className="
-            flex items-center gap-2 px-6 py-2.5 rounded-full
-            bg-gradient-to-r from-purple-600 to-indigo-600
-            hover:from-purple-700 hover:to-indigo-700
-            text-white font-semibold shadow-lg transition
-          "
+          className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold shadow-lg hover:scale-105 transition"
         >
           <FaPlus /> Add Course
         </NavLink>
       </div>
 
-      {/* STATUS TABS */}
-      <div className="flex gap-4 flex-wrap">
-        {["UPCOMING", "ONGOING", "COMPLETED"].map((status) => (
-          <button
-            key={status}
-            onClick={() => setActiveTab(status)}
-            className={`px-5 py-2 rounded-full font-semibold transition ${
-              activeTab === status
-                ? "bg-indigo-600 text-white shadow-lg"
-                : "bg-white/70 text-slate-600 hover:bg-white"
-            }`}
-          >
-            {status} ({coursesByStatus[status].length})
-          </button>
-        ))}
+      {/* ANALYTICS */}
+      <div className="grid sm:grid-cols-3 gap-4">
+        <KPI label="Total Courses" value={analytics.total} />
+        <KPI label="Paid Courses" value={analytics.paid} />
+        <KPI label="Free Courses" value={analytics.free} />
       </div>
 
-      {/* CONTENT */}
-      {loading && (
-        <GlassCard>
-          <p className="text-center text-slate-600">Loading courses...</p>
-        </GlassCard>
-      )}
+      {/* SEARCH + FILTER */}
+      <div className="flex flex-wrap gap-4">
+        <div className="relative flex-1">
+          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search course title or category..."
+            className="glass-input pl-10 w-full"
+          />
+        </div>
 
-      {!loading && coursesByStatus[activeTab].length === 0 && (
-        <GlassCard>
-          <p className="text-center text-slate-600">
-            No {activeTab.toLowerCase()} courses found.
-          </p>
-        </GlassCard>
-      )}
+        <select className="glass-input" value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)}>
+          <option value="ALL">All Levels</option>
+          <option>Beginner</option>
+          <option>Intermediate</option>
+          <option>Advanced</option>
+        </select>
 
-      {!loading && coursesByStatus[activeTab].length > 0 && (
-        <GlassCard className="p-0 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-white/70 text-slate-700">
-                <tr>
-                  <th className="px-4 py-3 text-left">Title</th>
-                  <th className="px-4 py-3 text-left">Category</th>
-                  <th className="px-4 py-3 text-center">Duration</th>
-                  <th className="px-4 py-3 text-center">Level</th>
-                  <th className="px-4 py-3 text-center">Mode</th>
-                  <th className="px-4 py-3 text-center">Price</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+        <select className="glass-input" value={modeFilter} onChange={(e) => setModeFilter(e.target.value)}>
+          <option value="ALL">All Modes</option>
+          <option>Online</option>
+          <option>Offline</option>
+          <option>Hybrid</option>
+        </select>
+      </div>
+
+      {/* TABLE */}
+      <GlassCard className="p-0 overflow-hidden">
+        <table className="w-full text-sm">
+          <tbody>
+            {filteredCourses.map((course) => {
+              const locked = hasBatch(course._id);
+              return (
+                <tr key={course._id} className="border-t hover:bg-indigo-100/40 transition">
+                  <td className="px-4 py-3 font-semibold">{course.title}</td>
+                  <td className="px-4 py-3">{safeText(course.category)}</td>
+                  <td className="px-4 py-3 text-center">{safePrice(course.price)}</td>
+                  <td className="px-4 py-3 flex justify-end gap-3">
+                    <IconBtn onClick={() => navigate(`/admin/courses/add?id=${course._id}`)}>
+                      <FaEdit />
+                    </IconBtn>
+
+                    <IconBtn
+                      danger
+                      disabled={locked}
+                      title={locked ? "Cannot delete. Batch exists." : ""}
+                      onClick={() => !locked && setConfirmId(course._id)}
+                    >
+                      {locked ? <FaLock /> : <FaTrash />}
+                    </IconBtn>
+                  </td>
                 </tr>
-              </thead>
+              );
+            })}
+          </tbody>
+        </table>
+      </GlassCard>
 
-              <tbody>
-                {coursesByStatus[activeTab].map((course) => (
-                  <tr
-                    key={course._id}
-                    className="border-t hover:bg-white/50 transition"
-                  >
-                    <td className="px-4 py-3 font-semibold text-slate-800">
-                      {course.title}
-                    </td>
-
-                    <td className="px-4 py-3 text-slate-600">
-                      {safeText(course.category)}
-                    </td>
-
-                    <td className="px-4 py-3 text-center">
-                      {safeText(course.duration)}
-                    </td>
-
-                    <td className="px-4 py-3 text-center">
-                      {safeText(course.level)}
-                    </td>
-
-                    <td className="px-4 py-3 text-center">
-                      {safeText(course.mode)}
-                    </td>
-
-                    <td className="px-4 py-3 text-center font-medium">
-                      {safePrice(course.price)}
-                    </td>
-
-                    <td className="px-4 py-3 flex justify-end gap-3">
-                      <IconBtn
-                        onClick={() =>
-                          navigate(`/admin/courses/add?id=${course._id}`)
-                        }
-                      >
-                        <FaEdit />
-                      </IconBtn>
-
-                      <IconBtn danger onClick={() => setConfirmId(course._id)}>
-                        <FaTrash />
-                      </IconBtn>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </GlassCard>
-      )}
-
-      {/* CONFIRM */}
       {confirmId && (
         <ConfirmModal
           open
           title="Delete Course"
-          message="Are you sure you want to delete this course? This action cannot be undone."
+          message="This action cannot be undone."
           onCancel={() => setConfirmId(null)}
           onConfirm={deleteCourse}
         />
       )}
 
-      {/* TOAST */}
       <Toast
         show={toast.show}
         message={toast.message}
@@ -268,10 +260,17 @@ export default function AllCourses() {
 
 /* ================= UI HELPERS ================= */
 
+const KPI = ({ label, value }) => (
+  <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-6 shadow text-center">
+    <p className="text-sm text-slate-600">{label}</p>
+    <p className="text-3xl font-bold text-indigo-700">{value}</p>
+  </div>
+);
+
 const IconBtn = ({ children, danger, ...props }) => (
   <button
     {...props}
-    className={`p-2.5 rounded-full transition ${
+    className={`p-2.5 rounded-full transition hover:scale-110 disabled:opacity-40 ${
       danger
         ? "bg-rose-100 text-rose-600 hover:bg-rose-200"
         : "bg-indigo-100 text-indigo-600 hover:bg-indigo-200"
@@ -282,14 +281,7 @@ const IconBtn = ({ children, danger, ...props }) => (
 );
 
 const GlassCard = ({ children, className = "" }) => (
-  <div
-    className={`
-      bg-white/40 backdrop-blur-[24px]
-      border border-white/40 rounded-3xl p-6
-      shadow-[0_30px_90px_rgba(0,0,0,0.2)]
-      ${className}
-    `}
-  >
+  <div className={`bg-white/65 backdrop-blur-2xl border border-white/60 rounded-3xl p-6 shadow ${className}`}>
     {children}
   </div>
 );

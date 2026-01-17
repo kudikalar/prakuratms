@@ -1,14 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { FaUsers, FaCheckCircle, FaArrowLeft } from "react-icons/fa";
+import {
+  FaUsers,
+  FaCheckCircle,
+  FaArrowLeft,
+  FaEdit,
+  FaTrash,
+} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Toast from "../../../components/Toast";
 
 /* ================= STATUS HELPERS ================= */
 
 const STATUS_COLORS = {
-  ToStart: "bg-gray-200/70 text-gray-800",
-  InProgress: "bg-blue-200/70 text-blue-800",
-  Done: "bg-green-200/70 text-green-800",
+  ToStart: "bg-slate-200/70 text-slate-800",
+  InProgress: "bg-indigo-200/70 text-indigo-800",
+  Done: "bg-emerald-200/70 text-emerald-800",
 };
 
 const STATUS_LABEL = {
@@ -28,6 +34,8 @@ const getBatchStatus = (startDate, endDate) => {
   return "InProgress";
 };
 
+const normalizeId = (v) => (v == null ? "" : String(v));
+
 /* ================= MAIN ================= */
 
 export default function BatchAllocation() {
@@ -41,37 +49,47 @@ export default function BatchAllocation() {
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState("");
 
-  /* ================= INITIAL LOAD ================= */
+  const [editBatch, setEditBatch] = useState(null);
+  const [deleteBatchId, setDeleteBatchId] = useState(null);
+
+  /* ================= LOAD ================= */
+
   useEffect(() => {
     const storedBatches =
       JSON.parse(localStorage.getItem("batches")) || [];
 
     const users =
       JSON.parse(localStorage.getItem("users")) || {};
-    const storedStudents = users.students || [];
+    const storedStudents = (users.students || []).map((s) => ({
+      ...s,
+      id: normalizeId(s.id),
+    }));
 
     const storedAllocations =
       JSON.parse(localStorage.getItem("batchAllocations")) || {};
 
-    const normalized = {};
+    const normalizedAllocations = {};
     storedBatches.forEach((b) => {
-      normalized[b.id] = {
-        students: storedAllocations[b.id]?.students || [],
+      const bid = normalizeId(b.id);
+      normalizedAllocations[bid] = {
+        students:
+          storedAllocations[bid]?.students?.map(normalizeId) || [],
         status: getBatchStatus(b.startDate, b.endDate),
       };
     });
 
     localStorage.setItem(
       "batchAllocations",
-      JSON.stringify(normalized)
+      JSON.stringify(normalizedAllocations)
     );
 
-    setBatches(storedBatches);
+    setBatches(storedBatches.map((b) => ({ ...b, id: normalizeId(b.id) })));
     setStudents(storedStudents);
-    setAllocations(normalized);
+    setAllocations(normalizedAllocations);
   }, []);
 
-  /* ================= LOAD STUDENTS ON BATCH CHANGE ================= */
+  /* ================= LOAD STUDENTS ON BATCH ================= */
+
   useEffect(() => {
     if (!selectedBatch) {
       setSelectedStudents([]);
@@ -82,7 +100,8 @@ export default function BatchAllocation() {
     );
   }, [selectedBatch, allocations]);
 
-  /* ================= FILTER STUDENTS ================= */
+  /* ================= FILTER ================= */
+
   const filteredStudents = useMemo(() => {
     return students.filter((s) =>
       s.name.toLowerCase().includes(search.toLowerCase())
@@ -90,47 +109,107 @@ export default function BatchAllocation() {
   }, [students, search]);
 
   /* ================= TOGGLE STUDENT ================= */
+
   const toggleStudent = (id) => {
+    const sid = normalizeId(id);
     setSelectedStudents((prev) =>
-      prev.includes(id)
-        ? prev.filter((s) => s !== id)
-        : [...prev, id]
+      prev.includes(sid)
+        ? prev.filter((s) => s !== sid)
+        : [...prev, sid]
     );
   };
 
-  /* ================= SAVE ================= */
+  /* ================= SAVE ALLOCATION ================= */
+
   const saveAllocation = () => {
     if (!selectedBatch) {
       setToast("⚠️ Please select a batch");
       return;
     }
 
-    const updated = { ...allocations };
+    const updated = {};
 
-    // Ensure one student → one batch
-    Object.keys(updated).forEach((bid) => {
-      updated[bid].students =
-        updated[bid].students.filter(
-          (id) => !selectedStudents.includes(id)
-        );
+    Object.keys(allocations).forEach((bid) => {
+      updated[bid] = {
+        ...allocations[bid],
+        students: allocations[bid].students.filter(
+          (sid) => !selectedStudents.includes(sid)
+        ),
+      };
     });
 
-    const batch = batches.find(
-      (b) => b.id === Number(selectedBatch)
-    );
+    const batch = batches.find((b) => b.id === selectedBatch);
 
     updated[selectedBatch] = {
-      students: selectedStudents,
-      status: getBatchStatus(batch.startDate, batch.endDate),
+      students: [...selectedStudents],
+      status: getBatchStatus(batch?.startDate, batch?.endDate),
     };
 
     setAllocations(updated);
-    localStorage.setItem(
-      "batchAllocations",
-      JSON.stringify(updated)
-    );
+    localStorage.setItem("batchAllocations", JSON.stringify(updated));
 
     setToast("✅ Batch allocation saved");
+    setTimeout(() => setToast(""), 2500);
+  };
+
+  /* ================= EDIT BATCH ================= */
+
+  const saveBatchEdit = () => {
+    const updatedBatches = batches.map((b) =>
+      b.id === editBatch.id ? editBatch : b
+    );
+
+    const updatedAllocations = {
+      ...allocations,
+      [editBatch.id]: {
+        ...allocations[editBatch.id],
+        status: getBatchStatus(
+          editBatch.startDate,
+          editBatch.endDate
+        ),
+      },
+    };
+
+    setBatches(updatedBatches);
+    setAllocations(updatedAllocations);
+
+    localStorage.setItem("batches", JSON.stringify(updatedBatches));
+    localStorage.setItem(
+      "batchAllocations",
+      JSON.stringify(updatedAllocations)
+    );
+
+    setEditBatch(null);
+    setToast("✅ Batch updated");
+    setTimeout(() => setToast(""), 2500);
+  };
+
+  /* ================= DELETE BATCH ================= */
+
+  const confirmDeleteBatch = () => {
+    const updatedBatches = batches.filter(
+      (b) => b.id !== deleteBatchId
+    );
+
+    const updatedAllocations = { ...allocations };
+    delete updatedAllocations[deleteBatchId];
+
+    setBatches(updatedBatches);
+    setAllocations(updatedAllocations);
+
+    localStorage.setItem("batches", JSON.stringify(updatedBatches));
+    localStorage.setItem(
+      "batchAllocations",
+      JSON.stringify(updatedAllocations)
+    );
+
+    if (selectedBatch === deleteBatchId) {
+      setSelectedBatch("");
+      setSelectedStudents([]);
+    }
+
+    setDeleteBatchId(null);
+    setToast("🗑️ Batch deleted");
     setTimeout(() => setToast(""), 2500);
   };
 
@@ -140,41 +219,45 @@ export default function BatchAllocation() {
       .map((s) => s.name)
       .join(", ");
 
+  /* ================= UI ================= */
+
   return (
-    <div
-      className="
-        max-w-6xl mx-auto space-y-8 pb-24 animate-fadeIn
-        bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100
-        rounded-[32px] p-6 md:p-8
-        shadow-[0_40px_120px_rgba(80,70,200,0.25)]
-      "
-    >
-      {/* ================= HEADER ================= */}
+    <div className="
+      max-w-6xl mx-auto space-y-10 pb-24 animate-fadeIn
+      bg-gradient-to-br from-indigo-50 via-orange-50 to-pink-50
+      rounded-[40px] p-6 md:p-8
+      shadow-[0_40px_120px_rgba(79,70,229,0.25)]
+    ">
+      {/* HEADER */}
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate("/admin/batches")}
-          className="p-2 rounded-full bg-white/60 border border-white/50"
+          className="p-2 rounded-full bg-white/70 border border-white/50"
         >
           <FaArrowLeft />
         </button>
 
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">
+          <h2 className="
+            text-2xl font-bold
+            bg-gradient-to-r from-indigo-600 to-orange-500
+            bg-clip-text text-transparent
+          ">
             Batch Allocation
           </h2>
-          <p className="text-sm text-slate-600">
-            Assign students to training batches
+          <p className="text-sm text-slate-500">
+            Assign, edit and manage batch allocations
           </p>
         </div>
       </div>
 
-      {/* ================= ALLOCATION PANEL ================= */}
+      {/* ALLOCATION */}
       <GlassCard>
-        <label className="text-sm font-medium">Select Batch</label>
+        <label className="text-sm font-semibold">Select Batch</label>
         <select
           value={selectedBatch}
           onChange={(e) => setSelectedBatch(e.target.value)}
-          className="glass-input mt-1 mb-4"
+          className="glass-input mt-2 mb-4"
         >
           <option value="">-- Select Batch --</option>
           {batches.map((b) => (
@@ -187,18 +270,17 @@ export default function BatchAllocation() {
         {selectedBatch && (
           <>
             <div className="flex justify-between items-center mb-3">
-              <p className="text-sm font-semibold">
+              <p className="font-semibold text-sm">
                 Assign Students
-                <span className="ml-2 text-xs text-purple-700">
-                  ({selectedStudents.length} selected)
+                <span className="ml-2 text-xs text-indigo-600">
+                  ({selectedStudents.length})
                 </span>
               </p>
-
               <input
-                placeholder="Search student..."
+                placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="glass-input text-sm w-48"
+                className="glass-input w-48 text-sm"
               />
             </div>
 
@@ -224,14 +306,12 @@ export default function BatchAllocation() {
 
             <button
               onClick={saveAllocation}
-              disabled={!selectedBatch}
               className="
-                mt-5 flex items-center gap-2 px-7 py-3 rounded-full
-                font-semibold text-white
-                bg-gradient-to-r from-purple-600 to-indigo-600
-                hover:from-purple-700 hover:to-indigo-700
-                shadow-lg transition
-                disabled:opacity-50
+                mt-6 flex items-center gap-2 px-8 py-3 rounded-full
+                text-white font-semibold
+                bg-gradient-to-r from-indigo-600 via-violet-600 to-orange-500
+                hover:from-indigo-700 hover:to-orange-600
+                shadow-[0_15px_40px_rgba(79,70,229,0.45)]
               "
             >
               <FaCheckCircle />
@@ -241,35 +321,49 @@ export default function BatchAllocation() {
         )}
       </GlassCard>
 
-      {/* ================= OVERVIEW ================= */}
+      {/* BATCH OVERVIEW */}
       <div className="grid md:grid-cols-3 gap-6">
         {batches.map((batch) => {
           const alloc = allocations[batch.id];
           const count = alloc?.students.length || 0;
-          const status = getBatchStatus(batch.startDate, batch.endDate);
+          const status = alloc?.status;
 
           return (
             <GlassCard key={batch.id}>
               <div className="flex justify-between items-center mb-2">
                 <div>
-                  <h3 className="font-semibold text-slate-800">
-                    {batch.name}
-                  </h3>
+                  <h3 className="font-semibold">{batch.name}</h3>
                   <p className="text-sm text-slate-600">
                     {batch.course}
                   </p>
                 </div>
 
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[status]}`}
-                >
-                  {STATUS_LABEL[status]}
-                </span>
+                <div className="flex gap-2 items-center">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[status]}`}
+                  >
+                    {STATUS_LABEL[status]}
+                  </span>
+
+                  <button
+                    onClick={() => setEditBatch(batch)}
+                    className="p-2 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200"
+                  >
+                    <FaEdit />
+                  </button>
+
+                  <button
+                    onClick={() => setDeleteBatchId(batch.id)}
+                    className="p-2 rounded-full bg-rose-100 text-rose-600 hover:bg-rose-200"
+                  >
+                    <FaTrash />
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 text-sm text-purple-700">
+              <div className="flex items-center gap-2 text-sm text-indigo-600">
                 <FaUsers />
-                <span>{count} Students</span>
+                {count} Students
               </div>
 
               {count > 0 && (
@@ -283,6 +377,71 @@ export default function BatchAllocation() {
       </div>
 
       <Toast show={!!toast} message={toast} onClose={() => setToast("")} />
+
+      {/* EDIT MODAL */}
+      {editBatch && (
+        <Modal>
+          <h3 className="font-semibold text-lg mb-3">Edit Batch</h3>
+          <input
+            className="glass-input mb-2"
+            value={editBatch.name}
+            onChange={(e) =>
+              setEditBatch({ ...editBatch, name: e.target.value })
+            }
+          />
+          <input
+            className="glass-input mb-2"
+            value={editBatch.course}
+            onChange={(e) =>
+              setEditBatch({ ...editBatch, course: e.target.value })
+            }
+          />
+          <input
+            type="date"
+            className="glass-input mb-2"
+            value={editBatch.startDate || ""}
+            onChange={(e) =>
+              setEditBatch({ ...editBatch, startDate: e.target.value })
+            }
+          />
+          <input
+            type="date"
+            className="glass-input"
+            value={editBatch.endDate || ""}
+            onChange={(e) =>
+              setEditBatch({ ...editBatch, endDate: e.target.value })
+            }
+          />
+          <div className="flex justify-end gap-3 mt-4">
+            <button onClick={() => setEditBatch(null)} className="btn-secondary">
+              Cancel
+            </button>
+            <button onClick={saveBatchEdit} className="btn-primary">
+              Save
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* DELETE MODAL */}
+      {deleteBatchId && (
+        <Modal>
+          <h3 className="font-semibold text-lg">
+            Delete Batch?
+          </h3>
+          <p className="text-sm text-slate-600 mt-1">
+            All students will be unassigned.
+          </p>
+          <div className="flex justify-end gap-3 mt-5">
+            <button onClick={() => setDeleteBatchId(null)} className="btn-secondary">
+              Cancel
+            </button>
+            <button onClick={confirmDeleteBatch} className="btn-danger">
+              Delete
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -290,14 +449,21 @@ export default function BatchAllocation() {
 /* ================= SHARED UI ================= */
 
 const GlassCard = ({ children }) => (
-  <div
-    className="
-      bg-white/40 backdrop-blur-[24px]
-      border border-white/40
-      rounded-3xl p-6
-      shadow-[0_30px_90px_rgba(0,0,0,0.2)]
-    "
-  >
+  <div className="
+    bg-white/65 backdrop-blur-2xl
+    border border-white/50
+    rounded-3xl p-6
+    shadow-[0_25px_80px_rgba(0,0,0,0.15)]
+  ">
     {children}
+  </div>
+);
+
+const Modal = ({ children }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="absolute inset-0 bg-black/40" />
+    <div className="relative bg-white rounded-3xl p-6 w-96 shadow-xl">
+      {children}
+    </div>
   </div>
 );
