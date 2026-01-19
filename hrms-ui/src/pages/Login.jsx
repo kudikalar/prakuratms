@@ -35,7 +35,7 @@ import { APP_BASE } from "../utils/basePath";
 const roles = [
   { name: "Student", color: "emerald", icon: <FaUserGraduate /> },
   { name: "Educator", color: "blue", icon: <FaChalkboardTeacher /> },
-  { name: "Admin", color: "purple", icon: <FaUserShield /> },
+  { name: "Admin", color: "orange", icon: <FaUserShield /> },
 ];
 const roleContent = {
   Student: {
@@ -268,18 +268,19 @@ localStorage.setItem("loginRole", role);
   ==================================================================== */
 
   return (
-<div className="min-h-screen bg-gradient-to-br 
-from-purple-200/30 via-yellow-100/40 to-purple-100/30 
+<div className="min-h-screen bg-gradient-to-b 
+from-white via-orange-50 to-orange-100 
 flex flex-col">
+
 
   {/* HEADER */}
   <header className="flex justify-center py-4">
-    <div className="bg-white/60 px-6 py-2 rounded-xl backdrop-blur-xl border border-purple-300/40 shadow-lg flex flex-col items-center">
+    <div className="bg-white/60 px-6 py-2 rounded-xl backdrop-blur-xl border border-orange-300/40 shadow-lg flex flex-col items-center">
       
       <img src={logo} className="w-8 h-8 mb-1 drop-shadow" />
 
       <h1 className="text-lg font-bold text-slate-800 leading-tight">
-        <span className="text-purple-700 font-extrabold">PRAKURA</span> TMS
+        <span className="text-orange-600 font-extrabold">PRAKURA</span> TMS
       </h1>
 
       <p className="text-[11px] text-slate-500">
@@ -298,11 +299,11 @@ flex flex-col">
 
           {/* LEFT SECTION */}
 
-          <div className="hidden lg:flex flex-col justify-center px-16 text-white bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-700
+          <div className="hidden lg:flex flex-col justify-center px-16 text-white bg-gradient-to-br from-orange-500 via-orange-600 to-amber-700
 ">
             <img src={logo} className="w-16 h-16 mb-8 opacity-90" />
             <h2 className="text-4xl font-bold mb-4">{roleContent[role].title}</h2>
-            <p className="text-purple-200 text-sm">{roleContent[role].desc}</p>
+            <p className="text-orange-100 text-sm">{roleContent[role].desc}</p>
           </div>
 
           {/* RIGHT LOGIN SECTION */}
@@ -318,7 +319,7 @@ flex flex-col">
                 const colors = {
                   emerald: "bg-emerald-600 text-white shadow-emerald-300",
                   blue: "bg-blue-600 text-white shadow-blue-300",
-                  purple: "bg-purple-600 text-white shadow-purple-300",
+                  orange: "bg-orange-600 text-white shadow-orange-300",
                 };
 
                 const inactive = "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-300";
@@ -372,7 +373,7 @@ flex flex-col">
                   Remember me
                 </label>
 
-                <button type="button" onClick={() => setForgotOpen(true)} className="text-purple-600 hover:underline">
+                <button type="button" onClick={() => setForgotOpen(true)} className="text-orange-600 hover:underline">
                   Forgot password?
                 </button>
               </div>
@@ -384,15 +385,15 @@ flex flex-col">
                   type="checkbox"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className={errors.terms ? "accent-red-500" : "accent-purple-600"}
+                  className={errors.terms ? "accent-red-500" : "accent-orange-600"}
                 />
                 <span>
                   I agree to{" "}
-                  <button type="button" onClick={() => setTermsOpen(true)} className="text-purple-600 underline">
+                  <button type="button" onClick={() => setTermsOpen(true)} className="text-orange-600 underline">
                     Terms & Conditions
                   </button>{" "}
                   and{" "}
-                  <button type="button" onClick={() => setTermsOpen(true)} className="text-purple-600 underline">
+                  <button type="button" onClick={() => setTermsOpen(true)} className="text-orange-600 underline">
                     Privacy Policy
                   </button>
                 </span>
@@ -406,8 +407,8 @@ flex flex-col">
                 className={`w-full py-3.5 rounded-xl font-semibold text-white transition
                   ${
                     loading || !acceptedTerms
-                      ? "bg-purple-300 cursor-not-allowed"
-                      : "bg-purple-600 hover:bg-purple-700 shadow-md"
+                      ? "bg-orange-300 cursor-not-allowed"
+                      : "bg-orange-600 hover:bg-orange-700 shadow-md"
                   }`}
               >
                 {loading ? "Signing in..." : "Login"}
@@ -425,7 +426,7 @@ flex flex-col">
               <Input icon={<FaEnvelope />} value={email} onChange={setEmail} placeholder="Enter your email" />
               <button
                 onClick={handleForgotPassword}
-                className="w-full py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700"
+                className="w-full py-3 bg-orange-600 text-white rounded-xl hover:bg-orange-700"
               >
                 Send Reset Link
               </button>
@@ -448,7 +449,7 @@ flex flex-col">
               />
               <button
                 onClick={handleResetPassword}
-                className="w-full py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700"
+                className="w-full py-3 bg-orange-600 text-white rounded-xl hover:bg-orange-700"
               >
                 Reset Password
               </button>
@@ -564,7 +565,7 @@ function Input({ icon, value, onChange, placeholder, type = "text", right }) {
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full pl-12 pr-12 py-3 rounded-xl bg-white/70 border border-slate-200
-        text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-purple-400 outline-none
+        text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-orange-400 outline-none
         backdrop-blur-md"
       />
 
