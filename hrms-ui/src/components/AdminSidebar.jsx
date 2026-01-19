@@ -59,7 +59,14 @@ const ADMIN_MENU = [
   {
     title: "Dashboard",
     icon: <FaTachometerAlt />,
-    items: [{ label: "Overview", path: "/admin/dashboard" }],
+    items: [
+  {
+    label: "Overview",
+    path: "/admin/dashboard",
+    icon: <FaChartPie />,
+  },
+],
+
   },
   {
     title: "User Management",
@@ -385,16 +392,19 @@ export default function AdminSidebar() {
         className={`
           fixed md:static z-50
           h-full md:h-screen w-72
-          bg-gradient-to-br from-blue-800 via-blue-900 to-indigo-900
-          border-r border-white/20
+          bg-gradient-to-b from-[#fff7ed] via-[#fff1e6] to-[#ffedd5]
+shadow-[6px_0_30px_rgba(255,165,0,0.18)]
+border-r border-orange-200
+
           transform transition-transform duration-300
           ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
-        <div className="px-4 py-4 flex items-center justify-between border-b border-white/20">
+        <div className="px-4 py-4 flex items-center justify-between border-b border-white/30">
           <div className="flex items-center gap-3">
             <img src={PrakuraLogo} className="w-8 h-8" />
-            <span className="text-white font-semibold">PRAKURA TMS</span>
+            <span className="text-slate-900 font-semibold">PRAKURA TMS</span>
+
           </div>
           <button
             className="md:hidden text-white"
@@ -404,18 +414,19 @@ export default function AdminSidebar() {
           </button>
         </div>
 
-        <nav className="px-2 py-3 space-y-1 text-white text-sm overflow-y-auto">
+        <nav className="px-2 py-3 space-y-1 text-sm overflow-y-auto">
           {ACTIVE_MENU.filter(
             (m) => allowedMenus.includes(m.title) || role === "Admin"
           ).map((menu) => (
             <div key={menu.title}>
               <button
-                className="w-full flex justify-between items-center px-3 py-2 rounded-lg hover:bg-white/10"
+                className="w-full flex justify-between items-center px-4 py-3 rounded-xl 
+font-semibold text-slate-800 hover:bg-orange-100"
                 onClick={() =>
                   setOpenMenu((p) => (p === menu.title ? null : menu.title))
                 }
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 text-slate-800">
                   {menu.icon}
                   {menu.title}
                 </div>
@@ -440,7 +451,12 @@ export default function AdminSidebar() {
                         }`
                       }
                     >
-                      {item.label}
+                      <div className="flex items-center gap-3">
+  <span className="text-orange-600 text-sm">
+    {item.icon}
+  </span>
+  <span>{item.label}</span>
+</div>
                     </NavLink>
                   ))}
                 </div>
